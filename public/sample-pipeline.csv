@@ -1,0 +1,30 @@
+Opportunity Name,Account Name,Stage,Amount,Close Date,Opportunity Owner,Created Date,Last Activity,Next Step,Probability (%),Forecast Category
+Northwind Platform Renewal,Northwind,Commit,"$550,000",6/28/2026,Dana Whitfield,2/5/2026,5/9/2026,,90,Commit
+Globex Enterprise Expansion,Globex,Negotiation/Review,"$480,000",6/27/2026,Marcus Lee,3/21/2026,4/28/2026,,75,Best Case
+Stark Industries Rollout,Stark Ind.,Proposal/Price Quote,"$430,000",6/30/2026,Priya Nair,4/16/2026,5/17/2026,,60,Best Case
+Northwind Q2 Push 1,Northwind,Negotiation/Review,$55000,6/26/2026,Dana Whitfield,4/26/2026,5/22/2026,Confirm verbal,75,Best Case
+Initech Q2 Push 2,Initech,Proposal/Price Quote,$63000,6/27/2026,Marcus Lee,4/23/2026,5/18/2026,,60,Best Case
+Globex Q2 Push 3,Globex,Negotiation/Review,$71000,6/28/2026,Priya Nair,4/20/2026,5/14/2026,Confirm verbal,75,Best Case
+Umbrella Q2 Push 4,Umbrella,Proposal/Price Quote,$79000,6/29/2026,Tom Alvarez,4/17/2026,5/10/2026,,60,Best Case
+Hooli Q2 Push 5,Hooli,Negotiation/Review,$87000,6/30/2026,Jen Okafor,4/14/2026,5/6/2026,Confirm verbal,75,Best Case
+Soylent Q2 Push 6,Soylent,Proposal/Price Quote,$95000,7/1/2026,Dana Whitfield,4/11/2026,5/2/2026,,60,Best Case
+Vandelay Q2 Push 7,Vandelay,Negotiation/Review,$103000,6/26/2026,Marcus Lee,4/8/2026,4/28/2026,Confirm verbal,75,Best Case
+Vandelay Import Deal,Vandelay,Negotiation/Review,"$88,000",6/7/2026,Tom Alvarez,2/25/2026,4/23/2026,,75,Best Case
+Hooli Data Migration,Hooli,Proposal/Price Quote,"$54,000",5/25/2026,Jen Okafor,1/26/2026,4/9/2026,,60,Best Case
+Soylent Pilot,Soylent,Discovery,"$22,000",6/16/2026,Dana Whitfield,5/11/2026,5/28/2026,,20,Pipeline
+Stark Ind. Evaluation,Cyberdyne,Prospecting,$15000,8/4/2026,Priya Nair,3/2/2026,5/21/2026,,10,Pipeline
+Wayne LLC Evaluation,Massive Dynamic,Qualification,$19000,8/14/2026,Tom Alvarez,2/12/2026,5/9/2026,,15,Pipeline
+Acme Evaluation,Pied Piper,Discovery,$23000,8/24/2026,Jen Okafor,1/25/2026,4/27/2026,,20,Pipeline
+Cyberdyne Evaluation,Wonka,Value Proposition,$27000,9/3/2026,Dana Whitfield,1/7/2026,4/15/2026,,40,Pipeline
+Massive Dynamic Evaluation,Gekko Capital,Prospecting,$31000,9/13/2026,Marcus Lee,12/20/2025,4/3/2026,,10,Pipeline
+Pied Piper New Business 1,Umbrella,Prospecting,$18000,7/20/2026,Dana Whitfield,6/17/2026,6/25/2026,Next call booked,10,Pipeline
+Wonka New Business 2,Hooli,Qualification,$21000,7/26/2026,Marcus Lee,6/13/2026,6/24/2026,Next call booked,15,Pipeline
+Gekko Capital New Business 3,Soylent,Discovery,$24000,8/1/2026,Priya Nair,6/9/2026,6/23/2026,Next call booked,20,Pipeline
+Bluth Co New Business 4,Vandelay,Value Proposition,$27000,8/7/2026,Tom Alvarez,6/5/2026,6/22/2026,Next call booked,40,Pipeline
+Dunder Mifflin New Business 5,Stark Ind.,Proposal/Price Quote,$30000,8/13/2026,Jen Okafor,6/1/2026,6/21/2026,Next call booked,60,Best Case
+Prestige Worldwide New Business 6,Wayne LLC,Negotiation/Review,$33000,8/19/2026,Dana Whitfield,5/28/2026,6/20/2026,Next call booked,75,Best Case
+Sterling Cooper New Business 7,Acme,Commit,$36000,8/25/2026,Marcus Lee,5/24/2026,6/25/2026,Next call booked,90,Commit
+Oscorp New Business 8,Cyberdyne,Prospecting,$39000,8/31/2026,Priya Nair,5/20/2026,6/24/2026,Next call booked,10,Pipeline
+Acme Renewal,Acme,Qualification,,7/28/2026,,5/31/2026,6/18/2026,,,Pipeline
+Wonka Expansion,Wonka,Discovery,$0,,Marcus Lee,5/18/2026,6/10/2026,,20,Pipeline
+Oscorp Add-on,Oscorp,Proposal/Price Quote,"$67,500",7/7/2026,,5/2/2026,5/4/2026,,60,Best Case

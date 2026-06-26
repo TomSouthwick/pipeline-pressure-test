@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   Pipeline Pressure Test — "The Instrument".
+   Light, clinical, Stripe-precise. Whitespace + hairlines are the texture.
+   One electric-blue accent. Numerals are mono. No dot grid.
+---------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces */
+  --background: #ffffff;
+  --surface: #f6f7f9;
+  --surface-2: #eef1f4;
+  --border: #e5e8ec;
+  --border-strong: #d3d9e0;
+
+  /* Text */
+  --foreground: #0b1220;
+  --muted: #5b6573;
+  --muted-2: #97a0ad;
+
+  /* Accent */
+  --accent: #2563eb;
+  --accent-dim: #dce7ff;
+
+  /* Traffic lights — tuned to stay AA-legible on white */
+  --good: #16a34a;
+  --warn: #b45309;
+  --bad: #dc2626;
+
+  /* Instrument graduations */
+  --tick: rgba(11, 18, 32, 0.1);
+  --tick-strong: rgba(11, 18, 32, 0.28);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular, mono numerals — central to the instrument feel. */
+.tnum {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Mono eyebrow labels (uppercase, tracked out). */
+.eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.68rem;
+}
+
+/* Hairline rule — the recurring divider motif. */
+.rule {
+  height: 1px;
+  background: var(--border);
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Light, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
