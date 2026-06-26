@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { Button } from "@/components/ui/button";
 import type { DiagnosticResult, Mapping } from "@/lib/types";
-import { cn } from "@/lib/cn";
 
 const FIELD_LABELS: Record<string, string> = {
   dealName: "Deal name",
@@ -20,7 +20,7 @@ const FIELD_LABELS: Record<string, string> = {
 const SKIP_HINTS: Record<string, string> = {
   Momentum: "Add a Last Activity column to unlock Momentum scoring.",
   "Activity recency": "Map a Last Activity column to score deal recency.",
-  "Coverage & realism": "Enter a quota on the confirm step to score coverage.",
+  "Coverage & realism": "Enter a target on the mapping step and map close date to score coverage.",
   "Late-stage + stale combo": "Select late/commit stages and map Last Activity.",
   "Stuck in stage": "Requires stage-change history (not in a single export).",
 };
@@ -28,12 +28,17 @@ const SKIP_HINTS: Record<string, string> = {
 export function MethodologyPanel({
   result,
   mapping,
+  variant = "default",
+  leading,
 }: {
   result: DiagnosticResult;
   mapping: Mapping;
+  variant?: "default" | "header";
+  leading?: React.ReactNode;
 }) {
   const [open, setOpen] = React.useState(false);
   const { meta } = result;
+  const isHeader = variant === "header";
 
   const weightingLabel =
     meta.weightingMethod === "crm-probability"
@@ -43,18 +48,44 @@ export function MethodologyPanel({
         : "Weighted pipeline not computed (no amount column)";
 
   return (
-    <div className="mt-8 border-t border-border pt-6">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between text-sm font-medium text-foreground cursor-pointer hover:text-accent transition-colors"
+    <div className={isHeader ? "mb-6" : "mt-8 border-t border-border pt-6"}>
+      <div
+        className={
+          isHeader ? "flex items-center justify-between gap-4" : undefined
+        }
       >
-        <span>How this score works</span>
-        <span className="text-muted-2 text-xs">{open ? "▾" : "▸"}</span>
-      </button>
+        {leading}
+        {isHeader ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setOpen((o) => !o)}
+            className="shrink-0"
+          >
+            How this score works
+            <span className="text-muted-2">{open ? "▾" : "▸"}</span>
+          </Button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="flex w-full items-center justify-between text-sm font-medium text-foreground cursor-pointer hover:text-accent transition-colors"
+          >
+            <span>How this score works</span>
+            <span className="text-muted-2 text-xs">{open ? "▾" : "▸"}</span>
+          </button>
+        )}
+      </div>
 
       {open && (
-        <div className="mt-4 space-y-5 text-sm text-muted leading-relaxed">
+        <div
+          className={
+            isHeader
+              ? "mt-4 space-y-5 text-sm text-muted leading-relaxed border-t border-border pt-4"
+              : "mt-4 space-y-5 text-sm text-muted leading-relaxed"
+          }
+        >
           {meta.insufficientData ? (
             <p className="text-foreground">
               Not enough columns were mapped to produce a score. Map at least
@@ -86,10 +117,39 @@ export function MethodologyPanel({
               </li>
               <li>
                 <strong className="text-foreground">Coverage & realism</strong>{" "}
-                — open pipeline vs quota (optional)
+                — pipeline closing this quarter or year vs your target (optional;
+                needs close date)
               </li>
             </ul>
           </div>
+
+          {meta.quota != null && meta.periodLabel && meta.periodOpenValue != null && (
+            <div>
+              <p className="text-xs eyebrow text-muted-2 mb-2">Period coverage</p>
+              <p className="text-xs">
+                {meta.quotaPeriod === "year" ? "Annual" : "Quarterly"} target of{" "}
+                {meta.quota.toLocaleString("en-GB", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                })}{" "}
+                compared to {meta.periodDealsIncluded} deals (
+                {meta.periodOpenValue.toLocaleString("en-GB", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                })}
+                ) closing in {meta.periodLabel}.
+                {meta.periodDealsExcluded > 0 && (
+                  <>
+                    {" "}
+                    {meta.periodDealsExcluded} deals excluded (no close date or
+                    outside {meta.periodLabel}).
+                  </>
+                )}
+              </p>
+            </div>
+          )}
 
           <div>
             <p className="text-xs eyebrow text-muted-2 mb-2">Data used</p>

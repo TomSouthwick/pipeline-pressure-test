@@ -1,6 +1,6 @@
 // Two-layer column auto-detection: synonym dictionary, then content sniffer.
 // Produces a confidence-scored guess per canonical field plus an initial
-// Mapping. The UI always shows a confirm step before any result.
+// Mapping. Real uploads show a confirm step before any result.
 
 import type { CanonicalField, FieldGuess, Mapping, RawRow } from "./types";
 import { DATE_FIELDS, HIGH_CONFIDENCE, SYNONYMS } from "./scoring-config";
@@ -193,6 +193,17 @@ export function distinctStageValues(
     if (v) set.add(v);
   }
   return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Stage values pre-selected as late/commit from CRM defaults. */
+export function defaultLateStagesFor(
+  rows: RawRow[],
+  mapping: Mapping,
+  defaultLateStages: string[]
+): string[] {
+  return distinctStageValues(rows, mapping.stage).filter((v) =>
+    defaultLateStages.includes(v.toLowerCase().trim())
+  );
 }
 
 export { HIGH_CONFIDENCE };

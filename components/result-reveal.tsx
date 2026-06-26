@@ -4,15 +4,15 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { ScoreDial } from "./score-dial";
 import { CategoryCard } from "./category-card";
-import { WorstDeals } from "./worst-deals";
-import { DealTable } from "./deal-table";
+import { DealExplorer, categoryKeyToTab, type DealExplorerTab } from "./deal-explorer";
 import { MethodologyPanel } from "./methodology-panel";
 import { OutputsBar } from "./outputs-bar";
 import { Button } from "@/components/ui/button";
-import type { DiagnosticResult, Mapping } from "@/lib/types";
+import type { DiagnosticResult, Mapping, Status } from "@/lib/types";
+import type { CategoryKey } from "@/lib/deal-filters";
 
 function money(n: number): string {
-  return n.toLocaleString("en-US", {
+  return n.toLocaleString("en-GB", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -35,17 +35,26 @@ export function ResultReveal({
   result,
   mapping,
   originalHeaders,
+  isSample = false,
   onBack,
   onReset,
 }: {
   result: DiagnosticResult;
   mapping: Mapping;
   originalHeaders: string[];
+  isSample?: boolean;
   onBack: () => void;
   onReset: () => void;
 }) {
   const insufficient = result.meta.insufficientData;
   const weighting = weightingSummary(result);
+  const [activeTab, setActiveTab] = React.useState<DealExplorerTab>("top-risks");
+
+  const tabForCategory = (key: DealExplorerTab) => activeTab === key;
+
+  const categoryStatuses = Object.fromEntries(
+    result.categories.map((c) => [c.key, c.status])
+  ) as Partial<Record<CategoryKey, Status>>;
 
   return (
     <motion.div
@@ -54,15 +63,17 @@ export function ResultReveal({
       transition={{ duration: 0.3 }}
       className="w-full max-w-3xl mx-auto"
     >
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <Button variant="secondary" size="sm" onClick={onBack}>
-          <BackIcon />
-          Back to configuration
-        </Button>
-        <span className="text-[11px] text-muted-2">
-          {result.meta.dealsAnalyzed} deals · computed in your browser
-        </span>
-      </div>
+      <MethodologyPanel
+        result={result}
+        mapping={mapping}
+        variant="header"
+        leading={
+          <Button variant="secondary" size="sm" onClick={onBack}>
+            <BackIcon />
+            {isSample ? "Back to mapping" : "Back to configuration"}
+          </Button>
+        }
+      />
 
       {insufficient ? (
         <div className="rounded-xl border border-warn/40 bg-warn/5 px-5 py-6 text-center">
@@ -101,23 +112,38 @@ export function ResultReveal({
             {weighting && (
               <p className="mt-1 text-xs text-muted-2">{weighting}</p>
             )}
+            {result.meta.quota != null &&
+              result.meta.periodLabel &&
+              result.meta.periodOpenValue != null && (
+                <p className="mt-1 text-xs text-muted-2">
+                  {money(result.meta.periodOpenValue)} closing in{" "}
+                  {result.meta.periodLabel}
+                  {result.meta.quotaPeriod === "year" ? " (annual target)" : " (quarterly target)"}
+                </p>
+              )}
           </div>
         </div>
       )}
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {result.categories.map((c, i) => (
-          <CategoryCard key={c.key} category={c} index={i} />
+          <CategoryCard
+            key={c.key}
+            category={c}
+            index={i}
+            selected={tabForCategory(categoryKeyToTab(c.key))}
+            onSelect={() => setActiveTab(categoryKeyToTab(c.key))}
+          />
         ))}
       </div>
 
       {!insufficient && (
-        <>
-          <div className="mt-8">
-            <WorstDeals deals={result.worstDeals} />
-          </div>
-          <DealTable deals={result.rankedDeals} />
-        </>
+        <DealExplorer
+          rankedDeals={result.rankedDeals}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          categoryStatuses={categoryStatuses}
+        />
       )}
 
       <motion.div
@@ -133,7 +159,6 @@ export function ResultReveal({
         />
       </motion.div>
 
-      <MethodologyPanel result={result} mapping={mapping} />
       <ChecksNote result={result} />
     </motion.div>
   );

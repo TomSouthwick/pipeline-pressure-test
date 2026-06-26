@@ -21,7 +21,8 @@ npm test         # engine unit tests (Vitest)
 ## How it works
 
 ```
-app/page.tsx            State machine: idle → confirm → result
+app/page.tsx            State machine: idle → confirm → result (uploads)
+                        Sample buttons → mappings review → result
 components/             DropZone, ColumnConfirm, ResultReveal, DealTable,
                         MethodologyPanel, score dial, category cards
 lib/
@@ -40,13 +41,10 @@ public/
 ### The flow
 
 1. **Drop a CSV** (or try the Salesforce or HubSpot sample).
-2. **Confirm columns** — auto-detection pre-fills high-confidence matches; you
-   fix anything wrong, flag which stages are late/commit, and optionally enter a
-   quota. Sample data shows a prominent **Run now** banner when mapping looks
-   good; real uploads use the standard confirm step at the bottom.
-3. **Run** → animated reveal of the score, category cards, worst deals, full
-   deal table, and methodology panel.
-4. **Download** an annotated CSV or a PDF report — both generated in the browser.
+2. **Sample path:** mappings review — auto-detected columns shown upfront with **Run now**; edit mapping, late stages, or quota if you want, then run.
+3. **Upload path:** confirm columns — fix anything wrong, flag late/commit stages, optional quota, then **Run diagnostic**.
+4. **Result** → animated score, category cards, worst deals, deal table, methodology panel.
+5. **Download** an annotated CSV or PDF report — both generated in the browser.
 
 ### Scoring
 
@@ -102,13 +100,13 @@ Report synonym gaps via issue — patches go in `lib/scoring-config.ts`.
 
 ## Manual QA script
 
-1. **Sample fast path:** Try Salesforce sample → **Run now** → result → Back →
-   change one mapping → Run → score changes.
-2. **Late stages:** Deselect all late/commit stages → warning visible → run →
+1. **Sample path:** Try Salesforce sample → mappings review → Run now → result → Back to mapping → edit → Run now.
+2. **Upload path:** Upload CSV → confirm → run → Back to configuration → change mapping → score changes.
+3. **Late stages:** Deselect all late/commit stages → warning visible → run →
    skipped check appears in methodology.
-3. **Bad file:** Upload a `.xlsx` or `.txt` → friendly error on the landing screen.
-4. **Privacy:** DevTools Network tab during a run — no row payloads (see above).
-5. **Mobile:** iPhone-width sample path, drop zone tap, confirm scroll, result
+4. **Bad file:** Upload a `.xlsx` or `.txt` → friendly error on the landing screen.
+5. **Privacy:** DevTools Network tab during a run — no row payloads (see above).
+6. **Mobile:** iPhone-width sample path, drop zone tap, confirm scroll, result
    reveal, PDF/CSV download.
 
 ## Non-goals (v0)

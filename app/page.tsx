@@ -3,6 +3,7 @@
 import * as React from "react";
 import { AnimatePresence } from "motion/react";
 import { Hero } from "@/components/hero";
+import { SiteHeader } from "@/components/site-header";
 import { ColumnConfirm } from "@/components/column-confirm";
 import { ResultReveal } from "@/components/result-reveal";
 import {
@@ -16,10 +17,12 @@ import { autoDetect } from "@/lib/column-detection";
 import { inferCrm, type CrmGuess } from "@/lib/crm-detection";
 import { runDiagnostic } from "@/lib/scoring-engine";
 import { DEFAULT_LATE_STAGES } from "@/lib/scoring-config";
+import { cn } from "@/lib/cn";
 import type {
   DiagnosticResult,
   FieldGuess,
   Mapping,
+  QuotaPeriod,
 } from "@/lib/types";
 
 interface ConfirmCtx {
@@ -32,6 +35,7 @@ interface ConfirmCtx {
   parseWarnings: string[];
   lateStages?: string[];
   quota?: number | null;
+  quotaPeriod?: QuotaPeriod;
 }
 
 type Stage =
@@ -58,8 +62,7 @@ export default function Home() {
       setError(null);
       const { guesses, mapping } = autoDetect(parsed.headers, parsed.rows);
       const crm = inferCrm(parsed.headers);
-      setStage({
-        name: "confirm",
+      const ctx: ConfirmCtx = {
         parsed,
         guesses,
         mapping,
@@ -67,7 +70,9 @@ export default function Home() {
         crm,
         isSample,
         parseWarnings: parsed.warnings,
-      });
+      };
+
+      setStage({ name: "confirm", ...ctx });
     },
     []
   );
@@ -121,11 +126,17 @@ export default function Home() {
   );
 
   const onRun = React.useCallback(
-    (mapping: Mapping, lateStages: string[], quota: number | null) => {
+    (
+      mapping: Mapping,
+      lateStages: string[],
+      quota: number | null,
+      quotaPeriod: QuotaPeriod
+    ) => {
       if (stage.name !== "confirm") return;
       const result = runDiagnostic(stage.parsed.rows, mapping, {
         lateStages,
         quota,
+        quotaPeriod,
       });
       setStage({
         name: "result",
@@ -142,6 +153,7 @@ export default function Home() {
           parseWarnings: stage.parseWarnings,
           lateStages,
           quota,
+          quotaPeriod,
         },
       });
     },
@@ -160,7 +172,14 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center px-5 py-12 sm:py-16">
+    <>
+      <SiteHeader onHome={reset} />
+      <main
+        className={cn(
+          "flex-1 flex flex-col items-center px-5 pt-5 pb-12 sm:pt-6 sm:pb-16",
+          stage.name === "idle" ? "justify-center" : "justify-start"
+        )}
+      >
       <div className="w-full">
         <AnimatePresence mode="wait">
           {stage.name === "idle" && (
@@ -181,6 +200,7 @@ export default function Home() {
               initialMapping={stage.mapping}
               initialLateStages={stage.lateStages}
               initialQuota={stage.quota}
+              initialQuotaPeriod={stage.quotaPeriod}
               crm={stage.crm}
               isSample={stage.isSample}
               parseWarnings={stage.parseWarnings}
@@ -196,6 +216,7 @@ export default function Home() {
               result={stage.result}
               mapping={stage.mapping}
               originalHeaders={stage.headers}
+              isSample={stage.from.isSample}
               onBack={backToConfig}
               onReset={reset}
             />
@@ -203,16 +224,18 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      <footer className="mt-16 flex flex-col items-center gap-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs text-muted">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-          Runs entirely in your browser — no data is uploaded or stored
-        </div>
-        <span className="text-[10px] text-muted-2">v0</span>
-      </footer>
+      {stage.name === "idle" && (
+        <footer className="mt-16 flex flex-col items-center gap-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-muted">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            Runs in your browser. Nothing is uploaded.
+          </div>
+        </footer>
+      )}
     </main>
+    </>
   );
 }

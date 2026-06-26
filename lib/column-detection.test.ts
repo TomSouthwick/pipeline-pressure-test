@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { autoDetect } from "./column-detection";
+import { autoDetect, defaultLateStagesFor } from "./column-detection";
 import { HIGH_CONFIDENCE } from "./scoring-config";
+import type { Mapping } from "./types";
 
 describe("column-detection", () => {
   it("assigns each header at most once", () => {
@@ -20,5 +21,21 @@ describe("column-detection", () => {
     const deal = guesses.find((g) => g.field === "dealName")!;
     expect(deal.confidence).toBeGreaterThanOrEqual(HIGH_CONFIDENCE);
     expect(deal.header).toBe("Opportunity Name");
+  });
+
+  it("selects default late stages from CRM defaults", () => {
+    const rows = [
+      { Stage: "Open", Amount: "100" },
+      { Stage: "Commit", Amount: "200" },
+      { Stage: "Negotiation/Review", Amount: "300" },
+    ];
+    const mapping = { stage: "Stage" } as Mapping;
+    const late = defaultLateStagesFor(rows, mapping, [
+      "commit",
+      "negotiation/review",
+    ]);
+    expect(late).toContain("Commit");
+    expect(late).toContain("Negotiation/Review");
+    expect(late).not.toContain("Open");
   });
 });

@@ -32,11 +32,15 @@ export interface FieldGuess {
 /** User-confirmed mapping: canonical field -> source header (or null = absent). */
 export type Mapping = Record<CanonicalField, string | null>;
 
+export type QuotaPeriod = "quarter" | "year";
+
 export interface RunOptions {
   /** Stage values the user flagged as late/commit. */
   lateStages: string[];
   /** Optional quota; enables the Coverage & Realism category when > 0. */
   quota?: number | null;
+  /** Whether quota is a quarterly or annual target. Defaults to quarter. */
+  quotaPeriod?: QuotaPeriod;
 }
 
 export type Status = "good" | "warn" | "bad" | "na";
@@ -109,6 +113,12 @@ export interface DiagnosticResult {
     dealsAnalyzed: number;
     totalOpenValue: number;
     quota: number | null;
+    quotaPeriod: QuotaPeriod | null;
+    periodLabel: string | null;
+    periodOpenValue: number | null;
+    periodDealsIncluded: number;
+    periodDealsExcluded: number;
+    periodValueExcluded: number;
     weightedPipeline: number | null;
     /** How weighted pipeline was computed. */
     weightingMethod: "crm-probability" | "stage-map" | "none";

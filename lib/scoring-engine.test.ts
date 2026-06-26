@@ -8,6 +8,8 @@ import { runDiagnostic } from "./scoring-engine";
 import { DEFAULT_LATE_STAGES } from "./scoring-config";
 import { isValidQuotaInput, parseQuotaInput } from "./parse";
 
+import type { QuotaPeriod } from "./types";
+
 const sampleSf = fs.readFileSync(
   path.resolve(__dirname, "../public/sample-pipeline.csv"),
   "utf8"
@@ -21,7 +23,8 @@ const NOW = new Date(2026, 5, 25);
 function analyze(
   csv: string,
   lateStages = ["Proposal/Price Quote", "Negotiation/Review", "Commit"],
-  quota?: number
+  quota?: number,
+  quotaPeriod: QuotaPeriod = "quarter"
 ) {
   const { headers, rows } = parseCsvText(csv);
   const { mapping } = autoDetect(headers, rows);
@@ -30,7 +33,12 @@ function analyze(
     headers,
     rows,
     crm: inferCrm(headers),
-    result: runDiagnostic(rows, mapping, { lateStages, quota }, NOW),
+    result: runDiagnostic(
+      rows,
+      mapping,
+      { lateStages, quota, quotaPeriod },
+      NOW
+    ),
   };
 }
 
@@ -57,6 +65,14 @@ describe("auto-detection", () => {
     const { headers } = parseCsvText(bomCsv);
     expect(headers[0]).toBe("Deal Name");
     expect(normalizeHeader("\uFEFFDeal Name")).toBe("Deal Name");
+  });
+
+  it("auto-maps BOM-prefixed Salesforce-style export", () => {
+    const bomCsv =
+      "\uFEFFOpportunity Name,Amount,Stage\nNorthwind,50000,Commit";
+    const { mapping } = analyze(bomCsv);
+    expect(mapping.dealName).toBe("Opportunity Name");
+    expect(mapping.amount).toBe("Amount");
   });
 
   it("default late-stage list includes commit stages", () => {
@@ -88,6 +104,10 @@ describe("quota parsing", () => {
   it("rejects invalid input", () => {
     expect(parseQuotaInput(".")).toBeNull();
     expect(isValidQuotaInput(".")).toBe(false);
+    expect(parseQuotaInput("12abc")).toBeNull();
+    expect(isValidQuotaInput("12abc")).toBe(false);
+    expect(parseQuotaInput("0")).toBeNull();
+    expect(isValidQuotaInput("0")).toBe(false);
     expect(parseQuotaInput("")).toBeNull();
     expect(isValidQuotaInput("")).toBe(true);
   });
@@ -122,6 +142,44 @@ describe("diagnostic engine", () => {
     const cov = result.categories.find((c) => c.key === "coverage")!;
     expect(cov.score).not.toBeNull();
     expect(result.meta.weightedPipeline).toBeGreaterThan(0);
+    expect(result.meta.periodLabel).toBe("Q2 2026");
+    expect(result.meta.periodOpenValue).not.toBeNull();
+    expect(result.meta.periodOpenValue!).toBeLessThan(result.meta.totalOpenValue);
+  });
+
+  it("filters coverage to current quarter only", () => {
+    const csv = `Deal Name,Stage,Amount,Close Date,Created Date,Last Activity
+InQ2,Commit,100000,6/15/2026,1/1/2026,5/1/2026
+OutQ3,Open,200000,8/15/2026,1/1/2026,5/1/2026
+NoDate,Open,50000,,1/1/2026,5/1/2026`;
+    const { result } = analyze(csv, ["Commit"], 100_000, "quarter");
+    expect(result.meta.periodOpenValue).toBe(100_000);
+    expect(result.meta.periodDealsIncluded).toBe(1);
+    expect(result.meta.periodDealsExcluded).toBe(2);
+    const cov = result.categories.find((c) => c.key === "coverage")!;
+    expect(cov.findings.some((f) => f.label.includes("Q2 2026"))).toBe(true);
+    expect(cov.findings.some((f) => f.label.includes("excluded"))).toBe(true);
+  });
+
+  it("includes more pipeline in yearly coverage mode", () => {
+    const csv = `Deal Name,Stage,Amount,Close Date,Created Date,Last Activity
+InQ2,Commit,100000,6/15/2026,1/1/2026,5/1/2026
+OutQ3,Open,200000,8/15/2026,1/1/2026,5/1/2026`;
+    const quarter = analyze(csv, ["Commit"], 500_000, "quarter").result;
+    const year = analyze(csv, ["Commit"], 500_000, "year").result;
+    expect(quarter.meta.periodOpenValue).toBe(100_000);
+    expect(year.meta.periodOpenValue).toBe(300_000);
+    expect(year.meta.periodLabel).toBe("2026");
+  });
+
+  it("skips coverage when close date is not mapped", () => {
+    const csv = "Deal Name,Stage,Amount\nOnly,Open,1000";
+    const { result } = analyze(csv, [], 500_000);
+    const cov = result.categories.find((c) => c.key === "coverage")!;
+    expect(cov.score).toBeNull();
+    expect(result.skippedChecks.some((s) => s.name === "Coverage & realism")).toBe(
+      true
+    );
   });
 
   it("surfaces seeded whale deals with primary reasons", () => {

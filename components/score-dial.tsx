@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useReducedMotion } from "motion/react";
@@ -18,6 +19,8 @@ interface ScoreDialProps {
 
 const SWEEP = 260;
 const START = 90 + (360 - SWEEP) / 2;
+/** Trim burst fan at each arc end so emojis stay off the drop zone below. */
+const BURST_ARC_TRIM = 12;
 const GRADIENT_SEGS = 24;
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -62,81 +65,108 @@ function arcColor(f: number): string {
   return `hsl(${h.toFixed(1)}, ${s.toFixed(0)}%, ${l.toFixed(0)}%)`;
 }
 
-/** Scores at/above this get a confetti + emoji burst on reveal. */
+/** Scores at/above this get an emoji burst on reveal. */
 const CELEBRATION_THRESHOLD = 85;
 
-const CONFETTI_COLORS = [
-  "#2563eb",
-  "#16a34a",
-  "#f59e0b",
-  "#8b5cf6",
-  "#06b6d4",
+const CELEBRATION_EMOJIS = [
+  "😂",
+  "🤣",
+  "😎",
+  "💸",
+  "🤑",
+  "💵",
+  "🎰",
+  "🥇",
+  "💲",
+  "💳",
+  "🪎",
 ];
 
-const CELEBRATION_EMOJIS = ["✨", "🎯", "📈", "🚀", "💪", "🔥"];
+function shuffle<T>(items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+const CELEBRATION_EMOJI_COUNT = 100;
 
 function spawnCelebration(
   layer: HTMLElement,
-  originX: number,
-  originY: number,
+  dialEl: HTMLElement,
+  readoutEl: HTMLElement | null,
   score: number
 ) {
   if (score < CELEBRATION_THRESHOLD) return;
 
   layer.querySelectorAll("[data-celebration]").forEach((el) => el.remove());
 
-  const count = 22;
-  for (let i = 0; i < count; i++) {
+  const dialRect = dialEl.getBoundingClientRect();
+  const readoutRect = readoutEl?.getBoundingClientRect();
+  const originX = readoutRect
+    ? readoutRect.left + readoutRect.width / 2
+    : dialRect.left + dialRect.width / 2;
+  const originY = readoutRect
+    ? readoutRect.top + readoutRect.height / 2
+    : dialRect.top + dialRect.height / 2;
+
+  const viewportW = window.innerWidth;
+  const viewportH = window.innerHeight;
+  const maxRadius = Math.min(viewportW, viewportH) * 0.266;
+
+  const shuffledEmojis = shuffle(CELEBRATION_EMOJIS);
+  const burstStartRad = ((START + BURST_ARC_TRIM) * Math.PI) / 180;
+  const burstSweepRad = ((SWEEP - BURST_ARC_TRIM * 2) * Math.PI) / 180;
+
+  for (let i = 0; i < CELEBRATION_EMOJI_COUNT; i++) {
     const el = document.createElement("span");
     el.dataset.celebration = "1";
-    el.style.position = "absolute";
+    el.style.position = "fixed";
     el.style.left = `${originX}px`;
     el.style.top = `${originY}px`;
     el.style.pointerEvents = "none";
     el.style.willChange = "transform, opacity";
     el.style.transformOrigin = "center center";
-
-    const isEmoji = i % 4 === 0;
-    if (isEmoji) {
-      el.textContent = CELEBRATION_EMOJIS[i % CELEBRATION_EMOJIS.length];
-      el.style.fontSize = `${16 + (i % 3) * 4}px`;
-      el.style.lineHeight = "1";
-    } else {
-      const w = 5 + (i % 4);
-      const h = 7 + (i % 5);
-      el.style.width = `${w}px`;
-      el.style.height = `${h}px`;
-      el.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
-      el.style.borderRadius = i % 2 === 0 ? "1px" : "999px";
-    }
+    el.textContent = shuffledEmojis[i % shuffledEmojis.length];
+    el.style.fontSize = `${14 + (i % 5) * 3}px`;
+    el.style.lineHeight = "1";
 
     layer.appendChild(el);
 
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.65;
-    const dist = 60 + Math.random() * 95;
-    const dx = Math.cos(angle) * dist;
-    const dy = Math.sin(angle) * dist - 28;
+    // Fan outward along the gauge arc, inset slightly so spray misses the drop zone.
+    const angle = burstStartRad + Math.random() * burstSweepRad;
+    const distance = 40 + Math.random() * maxRadius;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
 
-    gsap.fromTo(
-      el,
-      {
-        x: 0,
-        y: 0,
-        scale: 0,
-        opacity: 1,
-        rotation: Math.random() * 180,
-      },
-      {
-        x: dx,
-        y: dy,
-        scale: isEmoji ? 1.1 + Math.random() * 0.35 : 0.9 + Math.random() * 0.5,
-        rotation: `+=${140 + Math.random() * 220}`,
-        opacity: 0,
-        duration: 1.45 + Math.random() * 0.75,
-        ease: "power2.out",
-        onComplete: () => el.remove(),
-      }
-    );
+    const burstDur = 0.55 + Math.random() * 0.35;
+    const holdDur = burstDur * 0.216;
+    const fadeDur = (0.35 + Math.random() * 0.25) * 0.72;
+
+    gsap
+      .timeline({ onComplete: () => el.remove() })
+      .fromTo(
+        el,
+        {
+          x: 0,
+          y: 0,
+          scale: 0,
+          opacity: 1,
+          rotation: Math.random() * 180,
+        },
+        {
+          x: dx,
+          y: dy,
+          scale: 0.85 + Math.random() * 0.55,
+          rotation: `+=${140 + Math.random() * 220}`,
+          duration: burstDur,
+          ease: "power2.out",
+        }
+      )
+      .to(el, { opacity: 1, duration: holdDur, ease: "none" })
+      .to(el, { opacity: 0, duration: fadeDur, ease: "power1.in" });
   }
 }
 
@@ -238,15 +268,20 @@ export function ScoreDial({
       if (readoutRef.current) {
         tl.to(
           readoutRef.current,
-          { scale: 1.4, duration: 0.3, ease: "power2.out" },
+          { scale: 1.75, duration: 0.3, ease: "power2.out" },
           "+=0.04"
         ).to(readoutRef.current, {
           scale: 1,
           duration: 0.72,
           ease: "back.out(3)",
           onStart: () => {
-            if (burstRef.current && target >= CELEBRATION_THRESHOLD) {
-              spawnCelebration(burstRef.current, cx, readoutY, target);
+            if (burstRef.current && dialRef.current && target >= CELEBRATION_THRESHOLD) {
+              spawnCelebration(
+                burstRef.current,
+                dialRef.current,
+                readoutRef.current,
+                target
+              );
             }
           },
         });
@@ -295,13 +330,6 @@ export function ScoreDial({
         className="relative overflow-visible"
         style={{ width: size, height: size }}
       >
-        {/* Confetti / emoji burst layer */}
-        <div
-          ref={burstRef}
-          className="absolute inset-0 overflow-visible pointer-events-none z-10"
-          aria-hidden
-        />
-
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {/* Colour-scale gradient at low opacity */}
           {gradientTrack}
@@ -353,6 +381,16 @@ export function ScoreDial({
           </div>
         </div>
       </div>
+
+      {mounted &&
+        createPortal(
+          <div
+            ref={burstRef}
+            className="fixed inset-0 overflow-visible pointer-events-none z-[300]"
+            aria-hidden
+          />,
+          document.body
+        )}
 
       {idle ? (
         <div className="mt-2 text-center">

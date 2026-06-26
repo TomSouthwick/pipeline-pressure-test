@@ -125,6 +125,8 @@ export function daysBetween(a: Date, b: Date): number {
 export function parseQuotaInput(raw: string): number | null {
   const s = raw.trim();
   if (!s) return null;
+  // Reject partial numeric strings like "12abc" that Number() would truncate.
+  if (!/^\d+(\.\d+)?$/.test(s)) return null;
   const n = Number(s);
   if (!Number.isFinite(n) || n <= 0) return null;
   return n;
@@ -134,6 +136,7 @@ export function parseQuotaInput(raw: string): number | null {
 export function isValidQuotaInput(raw: string): boolean {
   const s = raw.trim();
   if (!s) return true;
+  if (!/^\d+(\.\d+)?$/.test(s)) return false;
   const n = Number(s);
   return Number.isFinite(n) && n > 0;
 }

@@ -28,10 +28,11 @@ A free, single-page web tool. A GTM leader exports their open opportunities to C
 ## 4. UX flow (one screen, ruthless subtraction)
 
 1. **Landing:** a single centred drop zone. No nav, no settings. Headline, one line of subcopy, the drop zone, and secondary **"Try Salesforce sample"** / **"Try HubSpot sample"** buttons. The sample-data path is mandatory: it is how curious visitors and mobile users experience the payoff, and it drives shares.
-2. **Drop/select file** (drag-drop or click) → parse immediately.
-3. **Column confirm:** show detected column mapping with high-confidence matches pre-filled. The user glances, fixes anything wrong, clicks **Run**. Do not auto-run silently; a mis-mapped column produces a wrong diagnostic and destroys trust. **Sample path exception:** when loading committed sample CSVs, show a prominent **Run now** banner above the mapping (mapping stays visible for curiosity); real uploads keep the standard Run button at the bottom.
-4. **Result reveal (the moment):** animated reveal of a big score counting up (0-100), four category cards with traffic-light status, the 3-5 worst deals named with reasons, a sortable/filterable **all-deals table**, and a collapsible **methodology** panel explaining how the score was computed. When too few columns are mapped, show an insufficient-data state instead of a misleading zero score.
-5. **Outputs:** "Download annotated CSV" and "Download PDF report" buttons. Both generated entirely client-side. PDF includes methodology, checks ran/skipped, weighting method, and top at-risk deals.
+2. **Drop/select file** (drag-drop or click) → parse immediately → **column confirm** (uploads only).
+3. **Sample buttons:** parse and auto-detect, then show a **mappings review** screen (not the upload confirm gate). Column mapping is visible upfront with a **Run now** banner; late stages and quota remain editable. One click to result when ready.
+4. **Column confirm (uploads only):** show detected column mapping with high-confidence matches pre-filled. The user glances, fixes anything wrong, clicks **Run**. Do not auto-run silently for real uploads; a mis-mapped column produces a wrong diagnostic and destroys trust.
+5. **Result reveal (the moment):** animated reveal of a big score counting up (0-100), four category cards with traffic-light status, the 3-5 worst deals named with reasons, a sortable/filterable **all-deals table**, and a collapsible **methodology** panel explaining how the score was computed. When too few columns are mapped, show an insufficient-data state instead of a misleading zero score.
+6. **Outputs:** "Download annotated CSV" and "Download PDF report" buttons. Both generated entirely client-side. PDF includes methodology, checks ran/skipped, weighting method, and top at-risk deals.
 
 Must work on mobile (the sample-data path especially). Page load under 2 seconds.
 
@@ -95,6 +96,7 @@ Four categories, each scored out of 25, rolling into a 0-100 health score (highe
 - **Light mode**, credible and restrained — clean “instrument” UI (audience is technical: think Tines/Semgrep buyers). The tool must not look like a toy or it undermines the pipeline judgement it is selling.
 - No decorative grid background; generous whitespace on a neutral surface.
 - Geist Sans for body, Geist Mono for numerals and data readouts.
+- Persistent sticky wordmark header (“Pipeline Pressure Test”) on every screen — click returns to landing. No nav links or settings.
 - Motion: tight and quick. Score count-up with a pop on land, staggered reveal of category cards and worst-deals list. Respect `prefers-reduced-motion`.
 - Single clear action per screen. Whitespace as a tool, not decoration.
 
@@ -121,9 +123,9 @@ Four categories, each scored out of 25, rolling into a 0-100 health score (highe
 ## 11. Acceptance criteria
 
 - Loads in under 2 seconds; works on mobile.
-- Sample-data buttons produce a full result with one click from the pre-filled confirm screen (**Run now**).
+- Sample-data buttons land on a mappings review screen with **Run now** — one click to result when mapping looks good (confirm step skipped for uploads only).
 - A real Salesforce or HubSpot CSV export auto-maps correctly with at most one or two manual fixes in the confirm step.
 - No network request ever carries deal-row data (verify in DevTools Network tab).
 - Score, category breakdowns, named worst deals, full deal table, and methodology all render with reasons.
 - Annotated CSV and PDF both download and open correctly.
-- Mis-mapping is impossible to do silently: the confirm step always precedes a result (sample gets fast Run, not silent auto-run).
+- Mis-mapping is impossible to do silently for real uploads: the confirm step always precedes a result. Sample data uses a lighter mappings review instead of the upload confirm gate.

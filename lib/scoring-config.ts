@@ -6,7 +6,7 @@
 // below are a defensible v1, not gospel. Change numbers here, not logic there.
 // ============================================================================
 
-import type { CanonicalField } from "./types";
+import type { CanonicalField, Status } from "./types";
 
 /** A detected guess at/above this confidence is pre-confirmed in the UI. */
 export const HIGH_CONFIDENCE = 0.7;
@@ -208,6 +208,15 @@ export const STATUS_THRESHOLDS = {
   good: 0.75, // >= 75% of max -> green
   warn: 0.5, // >= 50% -> amber, else red
 };
+
+/** Traffic-light status from a category score (same thresholds as the gauge bands). */
+export function statusFromShare(score: number | null, max: number): Status {
+  if (score == null || max === 0 || score === 0) return "na";
+  const share = score / max;
+  if (share >= STATUS_THRESHOLDS.good) return "good";
+  if (share >= STATUS_THRESHOLDS.warn) return "warn";
+  return "bad";
+}
 
 /** Map an overall 0..100 score to a short grade label for the headline. */
 export function gradeFor(score: number): string {

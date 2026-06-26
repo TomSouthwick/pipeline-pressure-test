@@ -16,7 +16,7 @@ function statusColor(s: Status): string {
 
 function money(n: number | null): string {
   if (n == null) return "—";
-  return n.toLocaleString("en-US", {
+  return n.toLocaleString("en-GB", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -46,7 +46,7 @@ export function generatePdf(result: DiagnosticResult): void {
   doc.setFontSize(9);
   doc.setTextColor(MUTED);
   doc.text(
-    `Generated ${new Date().toLocaleDateString("en-US", {
+    `Generated ${new Date().toLocaleDateString("en-GB", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -118,7 +118,7 @@ export function generatePdf(result: DiagnosticResult): void {
     doc.setTextColor(INK);
     doc.text(c.label, x, cy);
     doc.setTextColor(statusColor(c.status));
-    const scoreLabel = c.score == null ? "N/A" : `${c.score}/25`;
+    const scoreLabel = c.score == null ? "NA/25" : `${c.score}/25`;
     doc.text(scoreLabel, x + colW - doc.getTextWidth(scoreLabel), cy);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
@@ -176,6 +176,9 @@ export function generatePdf(result: DiagnosticResult): void {
   const methodLines = [
     "Score = applicable categories (each /25) rescaled to 100. Missing categories are excluded.",
     `Weighting: ${weightingLabel(result)}`,
+    result.meta.quota != null && result.meta.periodLabel
+      ? `Coverage: ${result.meta.quotaPeriod === "year" ? "annual" : "quarterly"} target ${money(result.meta.quota)} vs ${money(result.meta.periodOpenValue)} closing in ${result.meta.periodLabel}${result.meta.periodDealsExcluded > 0 ? ` (${result.meta.periodDealsExcluded} deals excluded)` : ""}`
+      : "",
     `Mapped fields: ${result.meta.mappedFields.join(", ") || "none"}`,
     `Checks run: ${result.ranChecks.join(", ") || "none"}`,
     result.skippedChecks.length

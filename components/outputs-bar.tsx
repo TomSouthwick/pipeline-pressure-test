@@ -28,7 +28,7 @@ export function OutputsBar({ result, originalHeaders, onReset }: OutputsBarProps
         Download annotated CSV
       </Button>
       <Button variant="ghost" size="md" className="ml-auto" onClick={onReset}>
-        Analyze another file
+        Analyse another file
       </Button>
     </div>
   );

@@ -18,7 +18,11 @@ export class CsvParseError extends Error {
   }
 }
 
-const BOM = "\uFEFF";
+
+/** Strip UTF-8 BOM from raw CSV text (Excel exports). */
+function stripBom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
 
 /** Strip UTF-8 BOM and trim CRM export headers. */
 export function normalizeHeader(h: string): string {
@@ -38,6 +42,18 @@ function validateHeaders(headers: string[]): string[] {
       `Duplicate column headers detected (${dupes.join(", ")}). Only the last value per row is kept — check your mapping.`
     );
   }
+
+  // PapaParse auto-renames duplicate headers (e.g. Amount -> Amount_1).
+  const renamed = headers.filter((h) => /_\d+$/.test(h));
+  if (renamed.length) {
+    const bases = [
+      ...new Set(renamed.map((h) => h.replace(/_\d+$/, ""))),
+    ];
+    warnings.push(
+      `Duplicate column headers detected (${bases.join(", ")}). Extra columns were renamed — check your mapping.`
+    );
+  }
+
   return warnings;
 }
 
@@ -93,9 +109,10 @@ export function parseCsvFile(file: File): Promise<ParsedCsv> {
   });
 }
 
+
 /** Parse CSV text (used by the sample-data path and tests). */
 export function parseCsvText(text: string): ParsedCsv {
-  const res = Papa.parse<RawRow>(text, {
+  const res = Papa.parse<RawRow>(stripBom(text), {
     header: true,
     skipEmptyLines: "greedy",
     delimiter: ",",

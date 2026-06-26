@@ -1,21 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
-import type { WorstDeal } from "@/lib/types";
+import type { RankedDeal } from "@/lib/types";
+import { sortDeals, type DealSortKey } from "@/lib/deal-list-utils";
+import { DealRow, SortBtn } from "./deal-row";
 
-function money(n: number | null): string {
-  if (n == null) return "—";
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
+export function ForecastKillersList({ deals }: { deals: RankedDeal[] }) {
+  const [sortKey, setSortKey] = React.useState<DealSortKey>("risk");
+  const [sortAsc, setSortAsc] = React.useState(false);
+  const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
 
-export function WorstDeals({ deals }: { deals: WorstDeal[] }) {
-  const [parent] = useAutoAnimate();
+  const sorted = React.useMemo(
+    () => sortDeals(deals, sortKey, sortAsc),
+    [deals, sortKey, sortAsc]
+  );
+
+  const toggleSort = (key: DealSortKey) => {
+    if (sortKey === key) setSortAsc((v) => !v);
+    else {
+      setSortKey(key);
+      setSortAsc(key === "name");
+    }
+  };
 
   if (deals.length === 0) {
     return (
@@ -27,44 +33,48 @@ export function WorstDeals({ deals }: { deals: WorstDeal[] }) {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-foreground mb-3">
-        Deals quietly killing your forecast
-      </h3>
-      <ol ref={parent} className="flex flex-col gap-2">
-        {deals.map((d, i) => (
-          <motion.li
-            key={d.rowIndex}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35, delay: 0.4 + i * 0.07, ease: "easeOut" }}
-            className="rounded-xl border border-border bg-surface/70 p-4 flex items-start gap-4"
-          >
-            <span className="tnum text-xs text-muted-2 w-4 pt-0.5">{i + 1}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-foreground truncate">
-                  {d.name}
-                </span>
-                <span className="tnum text-xs text-muted shrink-0">
-                  {money(d.amount)}
-                  {d.stage ? (
-                    <span className="text-muted-2"> · {d.stage}</span>
-                  ) : null}
-                </span>
-              </div>
-              <p className="mt-1 text-[12px] text-muted leading-relaxed">
-                {d.primaryReason || d.reasons.join(" · ")}
-              </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs">
+        <span className="text-muted-2">Sort by</span>
+        <SortBtn label="Risk" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
+        <SortBtn label="Amount" active={sortKey === "amount"} onClick={() => toggleSort("amount")} />
+        <SortBtn label="Name" active={sortKey === "name"} onClick={() => toggleSort("name")} />
+      </div>
+
+      <div className="rounded-xl border border-border overflow-hidden">
+        <div className="hidden sm:flex items-center gap-3 px-3 py-2 border-b border-border bg-surface/80 text-xs text-muted">
+          <span className="w-5 shrink-0">#</span>
+          <span className="flex-1">
+            <SortBtn label="Deal" active={sortKey === "name"} onClick={() => toggleSort("name")} />
+          </span>
+          <span className="w-24 text-right">
+            <SortBtn label="Amount" active={sortKey === "amount"} onClick={() => toggleSort("amount")} />
+          </span>
+          <span className="max-w-[100px] hidden md:block">Stage</span>
+          <span className="w-12">
+            <SortBtn label="Risk" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
+          </span>
+          <span className="max-w-[180px] hidden lg:block">Primary flag</span>
+          <span className="w-4" />
+        </div>
+
+        <div className="sm:divide-y sm:divide-border/60 flex flex-col gap-2 sm:gap-0 p-2 sm:p-0">
+          {sorted.map((d, i) => (
+            <div key={d.rowIndex}>
+              <DealRow
+                deal={d}
+                rank={i + 1}
+                expanded={expandedRow === d.rowIndex}
+                onToggle={() =>
+                  setExpandedRow((prev) => (prev === d.rowIndex ? null : d.rowIndex))
+                }
+              />
             </div>
-            <span
-              title="risk score"
-              className="tnum text-xs font-semibold text-bad shrink-0 rounded-md border border-bad/30 bg-bad/10 px-2 py-1"
-            >
-              {d.riskScore}
-            </span>
-          </motion.li>
-        ))}
-      </ol>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
+/** @deprecated Use ForecastKillersList — kept for backwards compatibility during refactor */
+export { ForecastKillersList as WorstDeals };

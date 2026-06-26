@@ -15,11 +15,11 @@ import type {
   DiagnosticResult,
   Finding,
   Mapping,
+  QuotaPeriod,
   RankedDeal,
   RawRow,
   RunOptions,
   SkippedCheck,
-  Status,
   WorstDeal,
 } from "./types";
 import {
@@ -29,12 +29,13 @@ import {
   DEFAULT_STAGE_PROBABILITY,
   MOMENTUM,
   STAGE_PROBABILITY,
-  STATUS_THRESHOLDS,
+  statusFromShare,
   WEIGHTS,
   WORST_DEALS_COUNT,
   gradeFor,
 } from "./scoring-config";
 import { daysBetween, parseAmount, parseDate, parseProbability } from "./parse";
+import { getPeriodBounds, isCloseDateInPeriod } from "./quota-period";
 
 interface DealFlag {
   code: string;
@@ -75,17 +76,9 @@ function cell(row: RawRow, header: string | null): string | null {
   return t === "" ? null : t;
 }
 
-function statusFromShare(score: number, max: number): Status {
-  if (max === 0) return "na";
-  const share = score / max;
-  if (share >= STATUS_THRESHOLDS.good) return "good";
-  if (share >= STATUS_THRESHOLDS.warn) return "warn";
-  return "bad";
-}
-
 function fmtMoney(n: number | null): string {
   if (n == null) return "—";
-  return n.toLocaleString("en-US", {
+  return n.toLocaleString("en-GB", {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -129,6 +122,7 @@ export function runDiagnostic(
 ): DiagnosticResult {
   const lateSet = new Set(options.lateStages.map((s) => s.toLowerCase().trim()));
   const quota = options.quota && options.quota > 0 ? options.quota : null;
+  const quotaPeriod: QuotaPeriod = options.quotaPeriod ?? "quarter";
 
   const has = {
     amount: present(mapping, "amount"),
@@ -323,11 +317,58 @@ export function runDiagnostic(
     : dealsWithProbability > 0
       ? "crm-probability"
       : "stage-map";
+
+  let periodLabel: string | null = null;
+  let periodOpenValue: number | null = null;
+  let periodWeightedPipeline: number | null = null;
+  let periodDealsIncluded = 0;
+  let periodDealsExcluded = 0;
+  let periodValueExcluded = 0;
+
+  if (quota && has.closeDate && has.amount) {
+    periodLabel = getPeriodBounds(quotaPeriod, now).label;
+    let includedOpen = 0;
+    let includedWeighted = 0;
+
+    for (const d of deals) {
+      const amt = d.amount ?? 0;
+      if (
+        !d.closeDate ||
+        !isCloseDateInPeriod(d.closeDate, quotaPeriod, now)
+      ) {
+        periodDealsExcluded++;
+        if (amt > 0) periodValueExcluded += amt;
+        continue;
+      }
+
+      periodDealsIncluded++;
+      if (d.amount != null) {
+        includedOpen += d.amount;
+        let p: number;
+        if (d.probability != null) {
+          p = d.probability;
+        } else if (d.stageNorm) {
+          p = STAGE_PROBABILITY[d.stageNorm] ?? DEFAULT_STAGE_PROBABILITY;
+        } else {
+          p = DEFAULT_STAGE_PROBABILITY;
+        }
+        includedWeighted += d.amount * p;
+      }
+    }
+
+    periodOpenValue = includedOpen;
+    periodWeightedPipeline = includedWeighted;
+  }
+
   const coverage = scoreCoverage(
-    totalOpenValue,
-    weightedPipeline,
+    periodOpenValue,
+    periodWeightedPipeline,
     quota,
     has.amount,
+    has.closeDate,
+    periodLabel,
+    periodDealsExcluded,
+    periodValueExcluded,
     ran,
     skip
   );
@@ -390,6 +431,12 @@ export function runDiagnostic(
       dealsAnalyzed: n,
       totalOpenValue,
       quota,
+      quotaPeriod: quota ? quotaPeriod : null,
+      periodLabel: quota && has.closeDate ? periodLabel : null,
+      periodOpenValue: quota && has.closeDate ? periodOpenValue : null,
+      periodDealsIncluded: quota && has.closeDate ? periodDealsIncluded : 0,
+      periodDealsExcluded: quota && has.closeDate ? periodDealsExcluded : 0,
+      periodValueExcluded: quota && has.closeDate ? periodValueExcluded : 0,
       weightedPipeline,
       weightingMethod,
       dealsWithProbability,
@@ -681,10 +728,14 @@ function scoreConcentration(
 }
 
 function scoreCoverage(
-  totalOpenValue: number,
-  weightedPipeline: number | null,
+  periodOpenValue: number | null,
+  periodWeightedPipeline: number | null,
   quota: number | null,
   hasAmount: boolean,
+  hasCloseDate: boolean,
+  periodLabel: string | null,
+  excludedDeals: number,
+  excludedValue: number,
   ran: string[],
   skip: (n: string, r: string) => void
 ): CategoryResult {
@@ -700,9 +751,20 @@ function scoreCoverage(
     skip("Coverage & realism", "needs an amount column");
     return naCategory("coverage", "Coverage & realism", "No amount column mapped.");
   }
+  if (!hasCloseDate) {
+    skip("Coverage & realism", "needs close date for period coverage");
+    return naCategory(
+      "coverage",
+      "Coverage & realism",
+      "Map close date to score period coverage."
+    );
+  }
 
-  const coverageRatio = totalOpenValue / quota;
-  const weightedRatio = (weightedPipeline ?? 0) / quota;
+  const openValue = periodOpenValue ?? 0;
+  const weighted = periodWeightedPipeline ?? 0;
+  const label = periodLabel ?? "period";
+  const coverageRatio = openValue / quota;
+  const weightedRatio = weighted / quota;
 
   const covPen =
     coverageRatio >= COVERAGE.minCoverageRatio
@@ -721,16 +783,24 @@ function scoreCoverage(
 
   const findings: Finding[] = [
     {
-      label: `Coverage ratio ${coverageRatio.toFixed(1)}x`,
-      detail: `${fmtMoney(totalOpenValue)} open vs ${fmtMoney(quota)} quota`,
+      label: `${coverageRatio.toFixed(1)}x coverage in ${label}`,
+      detail: `${fmtMoney(openValue)} open vs ${fmtMoney(quota)} target`,
       severity: coverageRatio < COVERAGE.minCoverageRatio ? "bad" : "good",
     },
     {
       label: `Weighted pipeline covers ${weightedRatio.toFixed(1)}x of your number`,
-      detail: fmtMoney(weightedPipeline),
+      detail: fmtMoney(weighted),
       severity: weightedRatio < COVERAGE.minWeightedRatio ? "bad" : "good",
     },
   ];
+
+  if (excludedDeals > 0) {
+    findings.push({
+      label: `${excludedDeals} deals excluded (${fmtMoney(excludedValue)})`,
+      detail: `No close date or outside ${label}`,
+      severity: "warn",
+    });
+  }
 
   return {
     key: "coverage",
@@ -741,7 +811,7 @@ function scoreCoverage(
     headline:
       weightedRatio < COVERAGE.minWeightedRatio
         ? `Weighted pipeline covers only ${weightedRatio.toFixed(1)}x`
-        : `${coverageRatio.toFixed(1)}x coverage`,
+        : `${coverageRatio.toFixed(1)}x coverage in ${label}`,
     findings,
   };
 }
