@@ -16,6 +16,8 @@ npm run build    # production build
 npm test         # engine unit tests (Vitest)
 ```
 
+**Live:** [pipeline-pressure-test.vercel.app](https://pipeline-pressure-test.vercel.app) · [GitHub](https://github.com/TomSouthwick/pipeline-pressure-test)
+
 ## How it works
 
 ```
