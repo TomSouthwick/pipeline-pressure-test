@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { parseCsvText, normalizeHeader } from "./csv";
-import { autoDetect } from "./column-detection";
+import { autoDetect, defaultLateStagesFor } from "./column-detection";
 import { inferCrm } from "./crm-detection";
 import { runDiagnostic } from "./scoring-engine";
 import { DEFAULT_LATE_STAGES } from "./scoring-config";
@@ -22,12 +22,16 @@ const NOW = new Date(2026, 5, 25);
 
 function analyze(
   csv: string,
-  lateStages = ["Proposal/Price Quote", "Negotiation/Review", "Commit"],
+  lateStages?: string[],
   quota?: number,
   quotaPeriod: QuotaPeriod = "quarter"
 ) {
   const { headers, rows } = parseCsvText(csv);
   const { mapping } = autoDetect(headers, rows);
+  // Mirror the app: when the caller doesn't override, derive late/commit
+  // stages from the CRM defaults so HubSpot and Salesforce each use their own
+  // stage vocabulary instead of a hardcoded Salesforce list.
+  const stages = lateStages ?? defaultLateStagesFor(rows, mapping, DEFAULT_LATE_STAGES);
   return {
     mapping,
     headers,
@@ -36,7 +40,7 @@ function analyze(
     result: runDiagnostic(
       rows,
       mapping,
-      { lateStages, quota, quotaPeriod },
+      { lateStages: stages, quota, quotaPeriod },
       NOW
     ),
   };
@@ -126,6 +130,26 @@ describe("diagnostic engine", () => {
     const { result } = analyze(sampleSf);
     expect(result.meta.weightingMethod).toBe("crm-probability");
     expect(result.meta.dealsWithProbability).toBeGreaterThan(0);
+  });
+
+  it("Salesforce and HubSpot samples tell different stories", () => {
+    const sf = analyze(sampleSf).result.score!;
+    const hs = analyze(sampleHs).result.score!;
+    expect(sf).not.toBeNull();
+    expect(hs).not.toBeNull();
+    // The fixtures are distinct pipelines, not the same data in two formats.
+    expect(Math.abs(sf - hs)).toBeGreaterThanOrEqual(8);
+  });
+
+  it("HubSpot sample enables coverage and mixes weighting sources", () => {
+    const { result } = analyze(sampleHs, undefined, 800_000);
+    const cov = result.categories.find((c) => c.key === "coverage")!;
+    expect(cov.score).not.toBeNull();
+    expect(result.meta.weightingMethod).toBe("crm-probability");
+    // A few rows leave probability blank, so they fall back to stage estimates.
+    expect(result.meta.dealsWithProbability).toBeLessThan(
+      result.meta.dealsAnalyzed
+    );
   });
 
   it("scores categories; coverage N/A without quota", () => {

@@ -54,7 +54,12 @@ export default function Home() {
   const [error, setError] = React.useState<string | null>(null);
 
   const ingest = React.useCallback(
-    (parsed: ParsedCsv, fileName: string, isSample: boolean) => {
+    (
+      parsed: ParsedCsv,
+      fileName: string,
+      isSample: boolean,
+      prefill?: { quota?: number; quotaPeriod?: QuotaPeriod }
+    ) => {
       if (!parsed.rows.length || !parsed.headers.length) {
         setError("That file has no readable rows. Is it a valid CSV export?");
         return;
@@ -70,6 +75,8 @@ export default function Home() {
         crm,
         isSample,
         parseWarnings: parsed.warnings,
+        quota: prefill?.quota,
+        quotaPeriod: prefill?.quotaPeriod,
       };
 
       setStage({ name: "confirm", ...ctx });
@@ -98,12 +105,16 @@ export default function Home() {
   );
 
   const loadSample = React.useCallback(
-    async (path: string, fileName: string) => {
+    async (
+      path: string,
+      fileName: string,
+      prefill?: { quota?: number; quotaPeriod?: QuotaPeriod }
+    ) => {
       try {
         const res = await fetch(path);
         if (!res.ok) throw new Error("fetch failed");
         const text = await res.text();
-        ingest(parseCsvText(text), fileName, true);
+        ingest(parseCsvText(text), fileName, true, prefill);
       } catch {
         setError("Couldn't load the sample data.");
       }
@@ -116,11 +127,15 @@ export default function Home() {
     [loadSample]
   );
 
+  // The HubSpot sample pre-fills a quarterly target so Coverage runs out of the
+  // box — showcasing CRM-probability-weighted pipeline alongside the Salesforce
+  // sample, which stays a three-category (no-quota) story.
   const onSampleHubspot = React.useCallback(
     () =>
       loadSample(
         "/sample-pipeline-hubspot.csv",
-        "sample-pipeline-hubspot.csv"
+        "sample-pipeline-hubspot.csv",
+        { quota: 800_000, quotaPeriod: "quarter" }
       ),
     [loadSample]
   );
@@ -217,6 +232,7 @@ export default function Home() {
               mapping={stage.mapping}
               originalHeaders={stage.headers}
               isSample={stage.from.isSample}
+              crm={stage.from.crm}
               onBack={backToConfig}
               onReset={reset}
             />

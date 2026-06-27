@@ -157,6 +157,83 @@ export const WEIGHTS = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Per-deal risk tiers. A deal's risk score is the sum of its flag weights
+// (see buildRankedDeal). These thresholds turn that raw number into a
+// human-readable severity tier shown in the deal lists. Tunable.
+// ---------------------------------------------------------------------------
+export const RISK_TIERS = {
+  /** >= this score is Critical (one late-stage-stale flag alone qualifies). */
+  critical: WEIGHTS.lateStageStale, // 6
+  /** >= this score (and below critical) is At risk. Below it is Watch. */
+  atRisk: 3,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Per-flag metadata for the deal detail UI: a short label + point value for
+// the risk breakdown, and a one-line "why it matters" interpretation. This is
+// insight, not instruction — we explain why a flag is a forecast risk, we do
+// not prescribe what to do about it.
+// ---------------------------------------------------------------------------
+export const FLAG_META: Record<
+  string,
+  { label: string; points: number; insight: string }
+> = {
+  late_stage_stale: {
+    label: "late-stage stale",
+    points: WEIGHTS.lateStageStale,
+    insight:
+      "Late-stage deals that go quiet are the most common source of slipped commits — the sharpest forecast-risk signal we track.",
+  },
+  overdue: {
+    label: "overdue",
+    points: WEIGHTS.overdue,
+    insight:
+      "The close date has already passed, so the forecast date is stale and no longer trustworthy.",
+  },
+  stale_60: {
+    label: "stale 60+ days",
+    points: WEIGHTS.stale60,
+    insight: "Two months without activity usually means the deal has cooled.",
+  },
+  stale_30: {
+    label: "stale 30–60 days",
+    points: WEIGHTS.stale30,
+    insight: "A month of silence is an early sign the deal is drifting.",
+  },
+  stale_14: {
+    label: "stale 14+ days",
+    points: WEIGHTS.stale14,
+    insight: "Activity has paused — an early nudge keeps it from stalling.",
+  },
+  zombie: {
+    label: "zombie",
+    points: WEIGHTS.zombie,
+    insight:
+      "Deals created long ago but still in an early stage rarely convert.",
+  },
+  missing_amount: {
+    label: "no amount",
+    points: WEIGHTS.missingAmount,
+    insight: "Without an amount the deal can't be valued or forecast.",
+  },
+  missing_close_date: {
+    label: "no close date",
+    points: WEIGHTS.missingCloseDate,
+    insight: "Without a close date the deal can't be placed in a forecast period.",
+  },
+  missing_owner: {
+    label: "no owner",
+    points: WEIGHTS.missingOwner,
+    insight: "With no owner, no one is accountable for moving it forward.",
+  },
+  missing_next_step: {
+    label: "no next step",
+    points: WEIGHTS.missingNextStep,
+    insight: "A missing next step is the clearest sign a deal is drifting without a plan.",
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Momentum thresholds (days).
 // ---------------------------------------------------------------------------
 export const MOMENTUM = {
@@ -216,6 +293,25 @@ export function statusFromShare(score: number | null, max: number): Status {
   if (share >= STATUS_THRESHOLDS.good) return "good";
   if (share >= STATUS_THRESHOLDS.warn) return "warn";
   return "bad";
+}
+
+// ---------------------------------------------------------------------------
+// Finding-dot severity. A finding's colour reflects how many category points
+// (out of 25) it removed from the score — i.e. its real impact — not how many
+// deals tripped it. This keeps a green category from showing alarming red
+// bullets for a common-but-trivial issue (e.g. "no next step", weight 1).
+// Tunable.
+// ---------------------------------------------------------------------------
+export const FINDING_SEVERITY = {
+  bad: 3.5, // removed >= 3.5 of 25 points -> red
+  warn: 1, // removed >= 1 point -> amber, else muted
+};
+
+/** Traffic-light status for a single finding, from the points it cost the score. */
+export function findingSeverityFromPoints(points: number): Status {
+  if (points >= FINDING_SEVERITY.bad) return "bad";
+  if (points >= FINDING_SEVERITY.warn) return "warn";
+  return "na";
 }
 
 /** Map an overall 0..100 score to a short grade label for the headline. */

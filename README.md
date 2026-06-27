@@ -88,6 +88,14 @@ If you see any request sending CSV content to a third party, please file an issu
 Synthetic fixtures in `public/` cover Salesforce and HubSpot header patterns.
 Vitest asserts auto-mapping and CRM inference for both.
 
+The two samples are **two different fictional pipelines**, not the same data in
+two header formats. The Salesforce sample is a quarter-end crunch (bunched
+closes, stale commits) that scores **Shaky**; the HubSpot sample is a tidier
+mid-market pipeline (recent activity, spread closes) that scores **Solid, with
+leaks**. The HubSpot sample also pre-fills a quarterly target so the Coverage
+category runs out of the box, weighted by each deal's CRM probability — a few
+rows leave probability blank to show the stage-estimate fallback.
+
 For real exports (run locally — **never commit customer data**):
 
 | CRM | Expected headers | Notes |

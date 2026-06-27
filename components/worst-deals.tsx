@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { RankedDeal } from "@/lib/types";
 import { sortDeals, type DealSortKey } from "@/lib/deal-list-utils";
-import { DealRow, SortBtn } from "./deal-row";
+import { DealRow, SortBtn, DEAL_COLS } from "./deal-row";
 
 export function ForecastKillersList({ deals }: { deals: RankedDeal[] }) {
   const [sortKey, setSortKey] = React.useState<DealSortKey>("risk");
@@ -35,26 +35,26 @@ export function ForecastKillersList({ deals }: { deals: RankedDeal[] }) {
     <div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs">
         <span className="text-muted-2">Sort by</span>
-        <SortBtn label="Risk" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
+        <SortBtn label="Severity" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
         <SortBtn label="Amount" active={sortKey === "amount"} onClick={() => toggleSort("amount")} />
         <SortBtn label="Name" active={sortKey === "name"} onClick={() => toggleSort("name")} />
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden">
         <div className="hidden sm:flex items-center gap-3 px-3 py-2 border-b border-border bg-surface/80 text-xs text-muted">
-          <span className="w-5 shrink-0">#</span>
-          <span className="flex-1">
+          <span className={DEAL_COLS.rank}>#</span>
+          <span className={DEAL_COLS.name}>
             <SortBtn label="Deal" active={sortKey === "name"} onClick={() => toggleSort("name")} />
           </span>
-          <span className="w-24 text-right">
+          <span className={DEAL_COLS.amount}>
             <SortBtn label="Amount" active={sortKey === "amount"} onClick={() => toggleSort("amount")} />
           </span>
-          <span className="max-w-[100px] hidden md:block">Stage</span>
-          <span className="w-12">
-            <SortBtn label="Risk" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
+          <span className={DEAL_COLS.stage}>Stage</span>
+          <span className={DEAL_COLS.severity}>
+            <SortBtn label="Severity" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
           </span>
-          <span className="max-w-[180px] hidden lg:block">Primary flag</span>
-          <span className="w-4" />
+          <span className={DEAL_COLS.flag}>Primary flag</span>
+          <span className={DEAL_COLS.chevron} />
         </div>
 
         <div className="sm:divide-y sm:divide-border/60 flex flex-col gap-2 sm:gap-0 p-2 sm:p-0">
