@@ -322,3 +322,14 @@ export function gradeFor(score: number): string {
   if (score >= 40) return "At risk";
   return "Critical";
 }
+
+/**
+ * Traffic-light status for a headline grade band, so the tier word (and the
+ * dial colour scheme) read consistently with the category traffic lights.
+ * Healthy / Solid → green, Shaky → amber, At risk / Critical → red.
+ */
+export function gradeStatus(score: number): Status {
+  if (score >= 70) return "good";
+  if (score >= 55) return "warn";
+  return "bad";
+}

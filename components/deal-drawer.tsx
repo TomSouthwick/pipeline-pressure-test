@@ -9,7 +9,7 @@ import {
   type DealFilter,
   type DealSortKey,
 } from "@/lib/deal-list-utils";
-import { FilterPill, SortBtn, SeverityBadge } from "./deal-row";
+import { FilterPill, SortBtn, SeverityBadge, DealDetail } from "./deal-row";
 import { cn } from "@/lib/cn";
 
 function money(n: number | null): string {
@@ -33,7 +33,11 @@ export function DealDrawer({
   const [filter, setFilter] = React.useState<DealFilter>("at-risk");
   const [sortKey, setSortKey] = React.useState<DealSortKey>("risk");
   const [sortAsc, setSortAsc] = React.useState(false);
+  const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleRow = (rowIndex: number) =>
+    setExpandedRow((prev) => (prev === rowIndex ? null : rowIndex));
 
   const filtered = React.useMemo(() => {
     const list = filterDeals(deals, filter);
@@ -153,54 +157,118 @@ export function DealDrawer({
                         <SortBtn label="Close" active={sortKey === "closeDate"} onClick={() => toggleSort("closeDate")} />
                       </th>
                       <th className="px-3 py-2 font-medium">Primary flag</th>
+                      <th className="px-3 py-2 font-medium w-4" aria-label="Expand" />
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((d) => (
-                      <tr key={d.rowIndex} className="border-b border-border/60 last:border-0">
-                        <td className="px-3 py-2.5 font-medium text-foreground max-w-[180px] truncate">
-                          {d.name}
-                        </td>
-                        <td className="px-3 py-2.5 tnum text-muted whitespace-nowrap">
-                          {money(d.amount)}
-                        </td>
-                        <td className="px-3 py-2.5 text-muted text-xs max-w-[120px] truncate">
-                          {d.stage ?? "—"}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <SeverityBadge score={d.riskScore} />
-                        </td>
-                        <td className="px-3 py-2.5 tnum text-xs text-muted-2 hidden md:table-cell whitespace-nowrap">
-                          {d.closeDate ?? "—"}
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-muted max-w-[220px] truncate">
-                          {d.primaryReason || "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {filtered.map((d) => {
+                      const hasDetail =
+                        d.reasons.length > 0 || d.strengths.length > 0;
+                      const isExpanded = expandedRow === d.rowIndex;
+                      return (
+                        <React.Fragment key={d.rowIndex}>
+                          <tr
+                            role={hasDetail ? "button" : undefined}
+                            tabIndex={hasDetail ? 0 : undefined}
+                            aria-expanded={hasDetail ? isExpanded : undefined}
+                            onClick={hasDetail ? () => toggleRow(d.rowIndex) : undefined}
+                            onKeyDown={
+                              hasDetail
+                                ? (e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      toggleRow(d.rowIndex);
+                                    }
+                                  }
+                                : undefined
+                            }
+                            className={cn(
+                              "border-b border-border/60 last:border-0",
+                              hasDetail && "cursor-pointer hover:bg-surface/60"
+                            )}
+                          >
+                            <td className="px-3 py-2.5 font-medium text-foreground max-w-[180px] truncate">
+                              {d.name}
+                            </td>
+                            <td className="px-3 py-2.5 tnum text-muted whitespace-nowrap">
+                              {money(d.amount)}
+                            </td>
+                            <td className="px-3 py-2.5 text-muted text-xs max-w-[120px] truncate">
+                              {d.stage ?? "—"}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <SeverityBadge score={d.riskScore} />
+                            </td>
+                            <td className="px-3 py-2.5 tnum text-xs text-muted-2 hidden md:table-cell whitespace-nowrap">
+                              {d.closeDate ?? "—"}
+                            </td>
+                            <td className="px-3 py-2.5 text-xs text-muted max-w-[220px] truncate">
+                              {d.primaryReason || "—"}
+                            </td>
+                            <td className="px-3 py-2.5 text-muted-2 text-xs">
+                              {hasDetail ? (isExpanded ? "▾" : "▸") : ""}
+                            </td>
+                          </tr>
+                          {isExpanded && hasDetail && (
+                            <tr className="border-b border-border/60 last:border-0">
+                              <td colSpan={7} className="p-0">
+                                <DealDetail deal={d} />
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               <div className="sm:hidden flex flex-col gap-2">
-                {filtered.map((d) => (
-                  <div
-                    key={d.rowIndex}
-                    className="rounded-xl border border-border bg-surface/70 p-3"
-                  >
-                    <div className="flex justify-between gap-2">
-                      <span className="text-sm font-medium truncate">{d.name}</span>
-                      <SeverityBadge score={d.riskScore} />
+                {filtered.map((d) => {
+                  const hasDetail =
+                    d.reasons.length > 0 || d.strengths.length > 0;
+                  const isExpanded = expandedRow === d.rowIndex;
+                  return (
+                    <div
+                      key={d.rowIndex}
+                      role={hasDetail ? "button" : undefined}
+                      tabIndex={hasDetail ? 0 : undefined}
+                      aria-expanded={hasDetail ? isExpanded : undefined}
+                      onClick={hasDetail ? () => toggleRow(d.rowIndex) : undefined}
+                      onKeyDown={
+                        hasDetail
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                toggleRow(d.rowIndex);
+                              }
+                            }
+                          : undefined
+                      }
+                      className={cn(
+                        "rounded-xl border border-border bg-surface/70 p-3 overflow-hidden",
+                        hasDetail && "cursor-pointer"
+                      )}
+                    >
+                      <div className="flex justify-between gap-2">
+                        <span className="text-sm font-medium truncate">{d.name}</span>
+                        <SeverityBadge score={d.riskScore} />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {money(d.amount)}
+                        {d.stage ? ` · ${d.stage}` : ""}
+                      </p>
+                      {d.primaryReason && (
+                        <p className="mt-1 text-[11px] text-muted-2">{d.primaryReason}</p>
+                      )}
+                      {isExpanded && hasDetail && (
+                        <div className="-mx-3 -mb-3 mt-2">
+                          <DealDetail deal={d} />
+                        </div>
+                      )}
                     </div>
-                    <p className="mt-1 text-xs text-muted">
-                      {money(d.amount)}
-                      {d.stage ? ` · ${d.stage}` : ""}
-                    </p>
-                    {d.primaryReason && (
-                      <p className="mt-1 text-[11px] text-muted-2">{d.primaryReason}</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}

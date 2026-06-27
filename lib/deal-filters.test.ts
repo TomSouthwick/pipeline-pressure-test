@@ -14,6 +14,13 @@ function deal(
     primaryReason: "",
     reasons: [],
     flags: [],
+    strengths: [],
+    createdDate: null,
+    lastActivity: null,
+    nextStep: null,
+    probability: null,
+    forecastCategory: null,
+    daysSinceActivity: null,
     ...overrides,
   };
 }
