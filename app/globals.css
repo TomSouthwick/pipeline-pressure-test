@@ -8,7 +8,7 @@
 
 :root {
   /* Surfaces */
-  --background: #ffffff;
+  --background: #fff;
   --surface: #f6f7f9;
   --surface-2: #eef1f4;
   --border: #e5e8ec;
@@ -49,6 +49,8 @@
   --color-bad: var(--bad);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 html {
@@ -82,6 +84,91 @@ body {
   height: 1px;
   background: var(--border);
   border: 0;
+}
+
+.wordmark-pill {
+  position: relative;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 4px 24px rgba(255, 255, 255, 0.9),
+    0 0 40px 8px rgba(255, 255, 255, 0.55);
+}
+
+.wordmark-pill::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.65);
+  filter: blur(14px);
+  z-index: -1;
+}
+
+.text-gradient-pipeline {
+  background-image: linear-gradient(
+    90deg,
+    #ef4444 0%,
+    #f97316 24%,
+    #22c55e 54%,
+    #3b82f6 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@keyframes pipeline-gradient-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.text-gradient-pipeline-reveal {
+  opacity: 0;
+  animation: pipeline-gradient-reveal 0.65s ease-out 0.25s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-gradient-pipeline-reveal {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.methodology-modal[open] {
+  animation: methodology-modal-in 0.22s ease-out;
+}
+
+@keyframes methodology-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .methodology-modal[open] {
+    animation: none;
+  }
+}
+
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .text-gradient-pipeline {
+    -webkit-text-fill-color: unset;
+    color: var(--foreground);
+    background: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
