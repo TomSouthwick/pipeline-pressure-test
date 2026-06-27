@@ -3,27 +3,61 @@
 import * as React from "react";
 import type { RankedDeal, Status } from "@/lib/types";
 import type { CategoryKey } from "@/lib/deal-filters";
-import { dealsAtRisk, dealsForCategory } from "@/lib/deal-filters";
+import { dealsForCategory, dealsTopRisk } from "@/lib/deal-filters";
+import { riskTier } from "@/lib/deal-list-utils";
 import { STATUS_STYLES } from "@/lib/status-styles";
 import { ForecastKillersList } from "./worst-deals";
-import { DealRow } from "./deal-row";
+import { DealRow, DEAL_COLS } from "./deal-row";
 import { DealDrawer } from "./deal-drawer";
 import { cn } from "@/lib/cn";
 
 export type DealExplorerTab = "top-risks" | CategoryKey | "all";
 
-const TAB_ITEMS: { id: DealExplorerTab; label: string }[] = [
+const AGGREGATE_TABS: { id: DealExplorerTab; label: string }[] = [
   { id: "top-risks", label: "Top risks" },
   { id: "all", label: "All" },
+];
+
+const CATEGORY_TABS: { id: CategoryKey; label: string }[] = [
   { id: "hygiene", label: "Hygiene" },
   { id: "momentum", label: "Momentum" },
   { id: "concentration", label: "Concentration" },
 ];
 
-const CATEGORY_TAB_KEYS = new Set<CategoryKey>(["hygiene", "momentum", "concentration"]);
-
-function isCategoryTab(tab: DealExplorerTab): tab is CategoryKey {
-  return CATEGORY_TAB_KEYS.has(tab as CategoryKey);
+/**
+ * One tab. Selection always uses the same accent treatment so "selected" never
+ * reads as "good/bad". A category's health is shown by a small status dot
+ * instead, keeping selection and health visually independent.
+ */
+function ExplorerTab({
+  label,
+  active,
+  status,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  status?: Status;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors",
+        active
+          ? "bg-accent/15 border-accent/60 text-foreground"
+          : "border-border-strong text-muted hover:text-foreground"
+      )}
+    >
+      {status && (
+        <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_STYLES[status].dot)} />
+      )}
+      {label}
+    </button>
+  );
 }
 
 function DealExplorerPanelHeader({
@@ -65,7 +99,10 @@ export function DealExplorer({
   categoryStatuses?: Partial<Record<CategoryKey, Status>>;
 }) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const atRiskCount = dealsAtRisk(rankedDeals).length;
+
+  const topRisk = dealsTopRisk(rankedDeals);
+  const criticalCount = topRisk.filter((d) => riskTier(d.riskScore) === "critical").length;
+  const atRiskCount = topRisk.filter((d) => riskTier(d.riskScore) === "at-risk").length;
 
   const categoryDeals =
     activeTab === "top-risks" || activeTab === "all" || activeTab === "coverage"
@@ -74,47 +111,42 @@ export function DealExplorer({
 
   return (
     <div className="mt-8">
-      <div className="flex flex-wrap gap-2 mb-3">
-        {TAB_ITEMS.map((tab) => {
-          const categoryStatus =
-            isCategoryTab(tab.id) ? categoryStatuses?.[tab.id] : undefined;
-          const activeClasses =
-            activeTab === tab.id
-              ? categoryStatus
-                ? STATUS_STYLES[categoryStatus].tabActive
-                : "bg-accent/15 border-accent/60 text-foreground"
-              : "border-border-strong text-muted hover:text-foreground";
-
-          return (
-          <button
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {AGGREGATE_TABS.map((tab) => (
+          <ExplorerTab
             key={tab.id}
-            type="button"
+            label={tab.label}
+            active={activeTab === tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={cn(
-              "px-3 py-1 rounded-full text-xs border cursor-pointer transition-colors",
-              activeClasses
-            )}
-          >
-            {tab.label}
-          </button>
-          );
-        })}
+          />
+        ))}
+        <span className="mx-1 h-4 w-px bg-border-strong" aria-hidden />
+        {CATEGORY_TABS.map((tab) => (
+          <ExplorerTab
+            key={tab.id}
+            label={tab.label}
+            active={activeTab === tab.id}
+            status={categoryStatuses?.[tab.id]}
+            onClick={() => onTabChange(tab.id)}
+          />
+        ))}
       </div>
 
       <div className="max-h-[min(480px,50vh)] overflow-y-auto rounded-xl border border-border bg-surface/40 p-3 sm:p-4">
         {activeTab === "top-risks" && (
           <>
             <DealExplorerPanelHeader eyebrow="Top risks">
-              {atRiskCount === 0
-                ? "No forecast killers flagged"
-                : (
-                  <>
-                    <span className="tnum">{atRiskCount}</span> forecast killer
-                    {atRiskCount === 1 ? "" : "s"} flagged
-                  </>
-                )}
+              {topRisk.length === 0 ? (
+                "No critical or at-risk deals"
+              ) : (
+                <>
+                  <span className="tnum">{criticalCount}</span> critical
+                  {" · "}
+                  <span className="tnum">{atRiskCount}</span> at risk
+                </>
+              )}
             </DealExplorerPanelHeader>
-            <ForecastKillersList deals={dealsAtRisk(rankedDeals)} />
+            <ForecastKillersList deals={topRisk} />
           </>
         )}
 
@@ -129,7 +161,7 @@ export function DealExplorer({
         {activeTab === "all" && (
           <AllDealsSummary
             total={rankedDeals.length}
-            atRisk={atRiskCount}
+            atRisk={topRisk.length}
             onBrowse={() => setDrawerOpen(true)}
           />
         )}
@@ -173,11 +205,12 @@ function CategoryDealList({
       </DealExplorerPanelHeader>
       <div className="rounded-xl border border-border overflow-hidden">
       <div className="hidden sm:flex items-center gap-3 px-3 py-2 border-b border-border bg-surface/80 text-xs text-muted">
-        <span className="flex-1">Deal</span>
-        <span className="w-24 text-right">Amount</span>
-        <span className="max-w-[100px] hidden md:block">Stage</span>
-        <span className="w-12">Risk</span>
-        <span className="max-w-[180px] hidden lg:block">Primary flag</span>
+        <span className={DEAL_COLS.name}>Deal</span>
+        <span className={DEAL_COLS.amount}>Amount</span>
+        <span className={DEAL_COLS.stage}>Stage</span>
+        <span className={DEAL_COLS.severity}>Severity</span>
+        <span className={DEAL_COLS.flag}>Primary flag</span>
+        <span className={DEAL_COLS.chevron} />
       </div>
       <div className="sm:divide-y sm:divide-border/60 flex flex-col gap-2 sm:gap-0 p-2 sm:p-0">
         {deals.map((d) => (

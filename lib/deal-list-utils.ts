@@ -1,10 +1,28 @@
-import type { RankedDeal } from "./types";
-import { WEIGHTS } from "./scoring-config";
+import type { RankedDeal, Status } from "./types";
+import { RISK_TIERS } from "./scoring-config";
 
 export type DealFilter = "all" | "at-risk" | "critical" | "clean";
 export type DealSortKey = "risk" | "amount" | "closeDate" | "name";
 
-const CRITICAL_THRESHOLD = WEIGHTS.lateStageStale;
+const CRITICAL_THRESHOLD = RISK_TIERS.critical;
+
+/** Human-readable severity tier for a per-deal risk score. */
+export type RiskTier = "critical" | "at-risk" | "watch" | "clean";
+
+export function riskTier(score: number): RiskTier {
+  if (score >= RISK_TIERS.critical) return "critical";
+  if (score >= RISK_TIERS.atRisk) return "at-risk";
+  if (score > 0) return "watch";
+  return "clean";
+}
+
+/** Tier -> display label + traffic-light status (drives colour via STATUS_STYLES). */
+export const RISK_TIER_META: Record<RiskTier, { label: string; status: Status }> = {
+  critical: { label: "Critical", status: "bad" },
+  "at-risk": { label: "At risk", status: "warn" },
+  watch: { label: "Watch", status: "na" },
+  clean: { label: "Clean", status: "good" },
+};
 
 export function filterDeals(deals: RankedDeal[], filter: DealFilter): RankedDeal[] {
   if (filter === "at-risk") return deals.filter((d) => d.riskScore > 0);

@@ -8,6 +8,7 @@ import { DealExplorer, categoryKeyToTab, type DealExplorerTab } from "./deal-exp
 import { MethodologyPanel } from "./methodology-panel";
 import { OutputsBar } from "./outputs-bar";
 import { Button } from "@/components/ui/button";
+import { CRM_LABEL, type CrmGuess } from "@/lib/crm-detection";
 import type { DiagnosticResult, Mapping, Status } from "@/lib/types";
 import type { CategoryKey } from "@/lib/deal-filters";
 
@@ -36,6 +37,7 @@ export function ResultReveal({
   mapping,
   originalHeaders,
   isSample = false,
+  crm,
   onBack,
   onReset,
 }: {
@@ -43,11 +45,14 @@ export function ResultReveal({
   mapping: Mapping;
   originalHeaders: string[];
   isSample?: boolean;
+  crm?: CrmGuess;
   onBack: () => void;
   onReset: () => void;
 }) {
   const insufficient = result.meta.insufficientData;
   const weighting = weightingSummary(result);
+  const sampleLabel =
+    isSample && crm?.crm ? `Sample: ${CRM_LABEL[crm.crm]} export` : null;
   const [activeTab, setActiveTab] = React.useState<DealExplorerTab>("top-risks");
 
   const tabForCategory = (key: DealExplorerTab) => activeTab === key;
@@ -121,20 +126,39 @@ export function ResultReveal({
                   {result.meta.quotaPeriod === "year" ? " (annual target)" : " (quarterly target)"}
                 </p>
               )}
+            {result.meta.quota == null && (
+              <p className="mt-3 text-xs text-muted-2 max-w-sm leading-relaxed">
+                Headline score blends hygiene, momentum, and concentration. Add
+                a quota to fold in coverage, weighted by each deal&apos;s CRM
+                probability.
+              </p>
+            )}
+            {sampleLabel && (
+              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-muted">
+                {sampleLabel}
+              </p>
+            )}
           </div>
         </div>
       )}
 
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {result.categories.map((c, i) => (
-          <CategoryCard
-            key={c.key}
-            category={c}
-            index={i}
-            selected={tabForCategory(categoryKeyToTab(c.key))}
-            onSelect={() => setActiveTab(categoryKeyToTab(c.key))}
-          />
-        ))}
+        {result.categories.map((c, i) => {
+          // Coverage is pipeline-level (no per-deal list), so its card is
+          // display-only — selecting it would land on an empty tab.
+          const isCoverage = c.key === "coverage";
+          return (
+            <CategoryCard
+              key={c.key}
+              category={c}
+              index={i}
+              selected={!isCoverage && tabForCategory(categoryKeyToTab(c.key))}
+              onSelect={
+                isCoverage ? undefined : () => setActiveTab(categoryKeyToTab(c.key))
+              }
+            />
+          );
+        })}
       </div>
 
       {!insufficient && (

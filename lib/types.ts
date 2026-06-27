@@ -49,6 +49,12 @@ export interface Finding {
   label: string;
   detail: string;
   severity: Status;
+  /**
+   * Category points (out of 25) this finding removed from the score. Drives the
+   * bullet's dot colour so it tracks score impact, not how many deals tripped
+   * the flag. Omitted for positive ("all clear") findings.
+   */
+  points?: number;
 }
 
 export interface CategoryResult {

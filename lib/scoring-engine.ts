@@ -30,6 +30,7 @@ import {
   MOMENTUM,
   STAGE_PROBABILITY,
   statusFromShare,
+  findingSeverityFromPoints,
   WEIGHTS,
   WORST_DEALS_COUNT,
   gradeFor,
@@ -476,11 +477,13 @@ function scoreHygiene(
   ]);
   let incurred = 0;
   const counts: Record<string, number> = {};
+  const codeWeight: Record<string, number> = {};
   for (const d of deals) {
     for (const f of d.flags) {
       if (hygieneCodes.has(f.code)) {
         incurred += f.weight;
         counts[f.code] = (counts[f.code] ?? 0) + 1;
+        codeWeight[f.code] = f.weight;
       }
     }
   }
@@ -505,10 +508,12 @@ function scoreHygiene(
     missing_next_step: "no next step",
   };
   for (const [code, c] of Object.entries(counts)) {
+    const points = ((c * codeWeight[code]) / max) * CATEGORY_MAX;
     findings.push({
       label: `${c} ${c === 1 ? "deal" : "deals"} ${label[code]}`,
       detail: "",
-      severity: c / deals.length > 0.25 ? "bad" : "warn",
+      severity: findingSeverityFromPoints(points),
+      points,
     });
   }
   if (findings.length === 0) {
@@ -548,16 +553,20 @@ function scoreMomentum(
 
   let incurred = 0;
   const counts: Record<string, number> = {};
+  const codeWeight: Record<string, number> = {};
   for (const d of deals) {
     for (const f of d.flags) {
       if (momentumCodes.has(f.code)) {
         incurred += f.weight;
         counts[f.code] = (counts[f.code] ?? 0) + 1;
+        codeWeight[f.code] = f.weight;
       }
     }
   }
   const max = perDealMax * deals.length;
   const score = round1(CATEGORY_MAX * (1 - incurred / max));
+  const momentumPoints = (code: string) =>
+    ((counts[code] ?? 0) * (codeWeight[code] ?? 0) / max) * CATEGORY_MAX;
 
   if (canStale) ran.push("Activity recency (14/30/60 days)");
   else skip("Activity recency", "no last-activity column mapped");
@@ -568,24 +577,33 @@ function scoreMomentum(
 
   const findings: Finding[] = [];
   const stale = (counts.stale_14 ?? 0) + (counts.stale_30 ?? 0) + (counts.stale_60 ?? 0);
-  if (counts.stale_60)
+  if (counts.stale_60) {
+    const points = momentumPoints("stale_60");
     findings.push({
       label: `${counts.stale_60} deals with no activity in 60+ days`,
       detail: "",
-      severity: "bad",
+      severity: findingSeverityFromPoints(points),
+      points,
     });
-  if (counts.stale_30)
+  }
+  if (counts.stale_30) {
+    const points = momentumPoints("stale_30");
     findings.push({
       label: `${counts.stale_30} deals stalled 30–60 days`,
       detail: "",
-      severity: "warn",
+      severity: findingSeverityFromPoints(points),
+      points,
     });
-  if (counts.zombie)
+  }
+  if (counts.zombie) {
+    const points = momentumPoints("zombie");
     findings.push({
       label: `${counts.zombie} zombie deals (90+ days old, still early stage)`,
       detail: "",
-      severity: "bad",
+      severity: findingSeverityFromPoints(points),
+      points,
     });
+  }
   if (findings.length === 0)
     findings.push({ label: "Pipeline is actively worked", detail: "", severity: "good" });
 
@@ -612,6 +630,9 @@ function scoreConcentration(
 ): CategoryResult {
   const subPenalties: number[] = [];
   const findings: Finding[] = [];
+  // Sub-penalty (0..1) behind each pushed finding, so we can convert it into
+  // category points once we know how many sub-checks ran (the divisor).
+  const findingPens: number[] = [];
 
   const valued = deals.filter((d) => d.amount != null && d.amount > 0);
   const totalValue = valued.reduce((s, d) => s + (d.amount ?? 0), 0);
@@ -640,6 +661,7 @@ function scoreConcentration(
         detail: fmtMoney(bunchedValue),
         severity: "bad",
       });
+      findingPens.push(pen);
     }
   } else {
     skip("Close-date bunching", "needs amount + close date columns");
@@ -665,6 +687,7 @@ function scoreConcentration(
         detail: fmtMoney(top3),
         severity: "warn",
       });
+      findingPens.push(pen);
     }
   } else {
     skip("Top-3 concentration", "needs amount column and 3+ deals");
@@ -688,6 +711,7 @@ function scoreConcentration(
         detail: "highest-risk signal",
         severity: "bad",
       });
+      findingPens.push(pen);
     }
   } else {
     skip(
@@ -708,6 +732,15 @@ function scoreConcentration(
 
   const penalty = subPenalties.reduce((s, p) => s + p, 0) / subPenalties.length;
   const score = round1(CATEGORY_MAX * (1 - penalty));
+
+  // Each sub-check contributes pen/subPenalties.length of the lost 25 points.
+  // Recolour findings by that real impact instead of their initial guess.
+  findings.forEach((f, i) => {
+    const points = (findingPens[i] / subPenalties.length) * CATEGORY_MAX;
+    f.points = points;
+    f.severity = findingSeverityFromPoints(points);
+  });
+
   if (findings.length === 0)
     findings.push({
       label: "Pipeline is well distributed",
@@ -781,24 +814,32 @@ function scoreCoverage(
   ran.push("Coverage ratio vs quota");
   ran.push("Weighted pipeline vs quota");
 
+  // Each sub-check contributes pen/2 of the lost 25 points.
+  const covPoints = (covPen / 2) * CATEGORY_MAX;
+  const wPoints = (wPen / 2) * CATEGORY_MAX;
+
   const findings: Finding[] = [
     {
       label: `${coverageRatio.toFixed(1)}x coverage in ${label}`,
       detail: `${fmtMoney(openValue)} open vs ${fmtMoney(quota)} target`,
-      severity: coverageRatio < COVERAGE.minCoverageRatio ? "bad" : "good",
+      severity: covPen === 0 ? "good" : findingSeverityFromPoints(covPoints),
+      points: covPoints,
     },
     {
       label: `Weighted pipeline covers ${weightedRatio.toFixed(1)}x of your number`,
       detail: fmtMoney(weighted),
-      severity: weightedRatio < COVERAGE.minWeightedRatio ? "bad" : "good",
+      severity: wPen === 0 ? "good" : findingSeverityFromPoints(wPoints),
+      points: wPoints,
     },
   ];
 
   if (excludedDeals > 0) {
+    // Informational caveat — it doesn't move the score, so keep it muted.
     findings.push({
       label: `${excludedDeals} deals excluded (${fmtMoney(excludedValue)})`,
       detail: `No close date or outside ${label}`,
-      severity: "warn",
+      severity: "na",
+      points: 0,
     });
   }
 

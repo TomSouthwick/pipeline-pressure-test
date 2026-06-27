@@ -1,4 +1,5 @@
 import type { CategoryResult, RankedDeal } from "./types";
+import { RISK_TIERS } from "./scoring-config";
 
 export type CategoryKey = CategoryResult["key"];
 
@@ -31,4 +32,13 @@ export function dealsForCategory(
 
 export function dealsAtRisk(deals: RankedDeal[]): RankedDeal[] {
   return deals.filter((d) => d.riskScore > 0);
+}
+
+/**
+ * Deals in the Critical or At-risk tiers (riskScore >= the At-risk threshold).
+ * This is the "Top risks" set — the deals genuinely worth a forecast review.
+ * Lower-scoring "Watch" deals are excluded here and live under "All".
+ */
+export function dealsTopRisk(deals: RankedDeal[]): RankedDeal[] {
+  return deals.filter((d) => d.riskScore >= RISK_TIERS.atRisk);
 }

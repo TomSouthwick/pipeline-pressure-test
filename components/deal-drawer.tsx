@@ -6,11 +6,10 @@ import type { RankedDeal } from "@/lib/types";
 import {
   filterDeals,
   sortDeals,
-  CRITICAL_THRESHOLD,
   type DealFilter,
   type DealSortKey,
 } from "@/lib/deal-list-utils";
-import { FilterPill, SortBtn } from "./deal-row";
+import { FilterPill, SortBtn, SeverityBadge } from "./deal-row";
 import { cn } from "@/lib/cn";
 
 function money(n: number | null): string {
@@ -148,7 +147,7 @@ export function DealDrawer({
                       </th>
                       <th className="px-3 py-2 font-medium">Stage</th>
                       <th className="px-3 py-2 font-medium">
-                        <SortBtn label="Risk" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
+                        <SortBtn label="Severity" active={sortKey === "risk"} onClick={() => toggleSort("risk")} />
                       </th>
                       <th className="px-3 py-2 font-medium hidden md:table-cell">
                         <SortBtn label="Close" active={sortKey === "closeDate"} onClick={() => toggleSort("closeDate")} />
@@ -169,18 +168,7 @@ export function DealDrawer({
                           {d.stage ?? "—"}
                         </td>
                         <td className="px-3 py-2.5">
-                          <span
-                            className={cn(
-                              "tnum text-xs font-semibold rounded-md px-2 py-0.5",
-                              d.riskScore >= CRITICAL_THRESHOLD
-                                ? "text-bad bg-bad/10 border border-bad/30"
-                                : d.riskScore > 0
-                                  ? "text-warn bg-warn/10 border border-warn/30"
-                                  : "text-muted-2"
-                            )}
-                          >
-                            {d.riskScore}
-                          </span>
+                          <SeverityBadge score={d.riskScore} />
                         </td>
                         <td className="px-3 py-2.5 tnum text-xs text-muted-2 hidden md:table-cell whitespace-nowrap">
                           {d.closeDate ?? "—"}
@@ -202,14 +190,7 @@ export function DealDrawer({
                   >
                     <div className="flex justify-between gap-2">
                       <span className="text-sm font-medium truncate">{d.name}</span>
-                      <span
-                        className={cn(
-                          "tnum text-xs font-semibold shrink-0",
-                          d.riskScore > 0 ? "text-bad" : "text-muted-2"
-                        )}
-                      >
-                        {d.riskScore}
-                      </span>
+                      <SeverityBadge score={d.riskScore} />
                     </div>
                     <p className="mt-1 text-xs text-muted">
                       {money(d.amount)}

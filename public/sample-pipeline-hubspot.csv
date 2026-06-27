@@ -1,30 +1,29 @@
-Deal Name,Associated Company,Deal Stage,Amount,Close Date,Deal owner,Create Date,Last Activity Date,Next step,Deal probability,Forecast category
-Northwind Platform Renewal,Northwind,Commit,"$550,000",6/28/2026,Dana Whitfield,2/5/2026,5/9/2026,,90,Commit
-Globex Enterprise Expansion,Globex,Decision Maker Bought-In,"$480,000",6/27/2026,Marcus Lee,3/21/2026,4/28/2026,,75,Best Case
-Stark Industries Rollout,Stark Ind.,Contract Sent,"$430,000",6/30/2026,Priya Nair,4/16/2026,5/17/2026,,60,Best Case
-Northwind Q2 Push 1,Northwind,Decision Maker Bought-In,$55000,6/26/2026,Dana Whitfield,4/26/2026,5/22/2026,Confirm verbal,75,Best Case
-Initech Q2 Push 2,Initech,Contract Sent,$63000,6/27/2026,Marcus Lee,4/23/2026,5/18/2026,,60,Best Case
-Globex Q2 Push 3,Globex,Decision Maker Bought-In,$71000,6/28/2026,Priya Nair,4/20/2026,5/14/2026,Confirm verbal,75,Best Case
-Umbrella Q2 Push 4,Umbrella,Contract Sent,$79000,6/29/2026,Tom Alvarez,4/17/2026,5/10/2026,,60,Best Case
-Hooli Q2 Push 5,Hooli,Decision Maker Bought-In,$87000,6/30/2026,Jen Okafor,4/14/2026,5/6/2026,Confirm verbal,75,Best Case
-Soylent Q2 Push 6,Soylent,Contract Sent,$95000,7/1/2026,Dana Whitfield,4/11/2026,5/2/2026,,60,Best Case
-Vandelay Q2 Push 7,Vandelay,Decision Maker Bought-In,$103000,6/26/2026,Marcus Lee,4/8/2026,4/28/2026,Confirm verbal,75,Best Case
-Vandelay Import Deal,Vandelay,Decision Maker Bought-In,"$88,000",6/7/2026,Tom Alvarez,2/25/2026,4/23/2026,,75,Best Case
-Hooli Data Migration,Hooli,Contract Sent,"$54,000",5/25/2026,Jen Okafor,1/26/2026,4/9/2026,,60,Best Case
-Soylent Pilot,Soylent,Discovery,"$22,000",6/16/2026,Dana Whitfield,5/11/2026,5/28/2026,,20,Pipeline
-Stark Ind. Evaluation,Cyberdyne,Appointment Scheduled,$15000,8/4/2026,Priya Nair,3/2/2026,5/21/2026,,10,Pipeline
-Wayne LLC Evaluation,Massive Dynamic,Qualified To Buy,$19000,8/14/2026,Tom Alvarez,2/12/2026,5/9/2026,,15,Pipeline
-Acme Evaluation,Pied Piper,Discovery,$23000,8/24/2026,Jen Okafor,1/25/2026,4/27/2026,,20,Pipeline
-Cyberdyne Evaluation,Wonka,Presentation Scheduled,$27000,9/3/2026,Dana Whitfield,1/7/2026,4/15/2026,,40,Pipeline
-Massive Dynamic Evaluation,Gekko Capital,Appointment Scheduled,$31000,9/13/2026,Marcus Lee,12/20/2025,4/3/2026,,10,Pipeline
-Pied Piper New Business 1,Umbrella,Appointment Scheduled,$18000,7/20/2026,Dana Whitfield,6/17/2026,6/25/2026,Next call booked,10,Pipeline
-Wonka New Business 2,Hooli,Qualified To Buy,$21000,7/26/2026,Marcus Lee,6/13/2026,6/24/2026,Next call booked,15,Pipeline
-Gekko Capital New Business 3,Soylent,Discovery,$24000,8/1/2026,Priya Nair,6/9/2026,6/23/2026,Next call booked,20,Pipeline
-Bluth Co New Business 4,Vandelay,Presentation Scheduled,$27000,8/7/2026,Tom Alvarez,6/5/2026,6/22/2026,Next call booked,40,Pipeline
-Dunder Mifflin New Business 5,Stark Ind.,Contract Sent,$30000,8/13/2026,Jen Okafor,6/1/2026,6/21/2026,Next call booked,60,Best Case
-Prestige Worldwide New Business 6,Wayne LLC,Decision Maker Bought-In,$33000,8/19/2026,Dana Whitfield,5/28/2026,6/20/2026,Next call booked,75,Best Case
-Sterling Cooper New Business 7,Acme,Commit,$36000,8/25/2026,Marcus Lee,5/24/2026,6/25/2026,Next call booked,90,Commit
-Oscorp New Business 8,Cyberdyne,Appointment Scheduled,$39000,8/31/2026,Priya Nair,5/20/2026,6/24/2026,Next call booked,10,Pipeline
-Acme Renewal,Acme,Qualified To Buy,,7/28/2026,,5/31/2026,6/18/2026,,,Pipeline
-Wonka Expansion,Wonka,Discovery,$0,,Marcus Lee,5/18/2026,6/10/2026,,20,Pipeline
-Oscorp Add-on,Oscorp,Contract Sent,"$67,500",7/7/2026,,5/2/2026,5/4/2026,,60,Best Case
+Deal Name,Associated Company,Deal Stage,Amount,Close Date,Deal owner,Create Date,Last Activity Date,Next step,Deal probability,Forecast category,Record ID,Pipeline
+Brightwave Onboarding,Brightwave,Contract Sent,95000,6/29/2026,Sara Kim,4/2/2026,6/20/2026,Send order form,80,Best Case,4101,Sales Pipeline
+Cedar Foods Renewal,Cedar Foods,Decision Maker Bought-In,72000,6/20/2026,Owen Boyd,3/15/2026,5/8/2026,Confirm verbal,75,Best Case,4102,Sales Pipeline
+Delphi Health Expansion,Delphi Health,Commit,120000,6/30/2026,Lena Ruiz,2/20/2026,6/22/2026,Countersignature,90,Commit,4103,Sales Pipeline
+Evergreen Logistics,Evergreen Logistics,Contract Sent,60000,6/12/2026,Paul Adeyemi,4/10/2026,5/5/2026,,80,Best Case,4104,Sales Pipeline
+Foxtrot Media Buy,Foxtrot Media,Presentation Scheduled,38000,7/9/2026,Mia Fox,5/1/2026,6/10/2026,Schedule demo,40,Pipeline,4105,Sales Pipeline
+Granite Bank Pilot,Granite Bank,Qualified To Buy,45000,7/18/2026,Sara Kim,5/8/2026,6/19/2026,,20,Pipeline,4106,Sales Pipeline
+Harbor Retail Expansion,Harbor Retail,Decision Maker Bought-In,88000,6/18/2026,Owen Boyd,3/28/2026,6/14/2026,Legal review,75,Best Case,4107,Sales Pipeline
+Indigo Tech Upsell,Indigo Tech,Contract Sent,52000,5/29/2026,Lena Ruiz,4/3/2026,5/12/2026,,80,Best Case,4108,Sales Pipeline
+Juniper Labs New Biz,Juniper Labs,Appointment Scheduled,30000,7/24/2026,Paul Adeyemi,5/20/2026,6/12/2026,Discovery call,15,Pipeline,4109,Sales Pipeline
+Kestrel Energy,Kestrel Energy,Presentation Scheduled,41000,7/2/2026,Mia Fox,5/5/2026,6/8/2026,,40,Pipeline,4110,Sales Pipeline
+Larkspur SaaS,Larkspur SaaS,Qualified To Buy,36000,8/3/2026,,5/12/2026,6/17/2026,Send pricing,20,Pipeline,4111,Sales Pipeline
+Monarch Foods Renewal,Monarch Foods,Contract Sent,66000,6/9/2026,Sara Kim,4/22/2026,6/9/2026,Order form sent,80,Best Case,4112,Sales Pipeline
+Nimbus Cloud Expansion,Nimbus Cloud,Decision Maker Bought-In,78000,6/27/2026,Owen Boyd,3/30/2026,6/21/2026,,75,Best Case,4113,Sales Pipeline
+Olive & Co Pilot,Olive & Co,Qualified To Buy,28000,4/30/2026,Lena Ruiz,3/1/2026,5/2/2026,Re-engage,20,Pipeline,4114,Sales Pipeline
+Pioneer Freight,Pioneer Freight,Presentation Scheduled,33000,5/20/2026,Paul Adeyemi,4/5/2026,5/22/2026,,40,Pipeline,4115,Sales Pipeline
+Quartz Analytics,Quartz Analytics,Appointment Scheduled,24000,7/15/2026,Mia Fox,6/1/2026,6/23/2026,Discovery call,15,Pipeline,4116,Sales Pipeline
+Rowan Software,Rowan Software,Qualified To Buy,31000,7/22/2026,Sara Kim,6/3/2026,6/24/2026,Demo booked,20,Pipeline,4117,Sales Pipeline
+Solstice Media,Solstice Media,Presentation Scheduled,27000,7/28/2026,Owen Boyd,6/5/2026,6/20/2026,Proposal draft,40,Pipeline,4118,Sales Pipeline
+Tamarind Group,Tamarind Group,Decision Maker Bought-In,84000,7/10/2026,Lena Ruiz,5/15/2026,5/12/2026,Legal review,75,Best Case,4119,Sales Pipeline
+Umbra Systems,Umbra Systems,Contract Sent,58000,7/6/2026,Paul Adeyemi,5/18/2026,6/19/2026,,,Best Case,4120,Sales Pipeline
+Vertex Manufacturing,Vertex Manufacturing,Qualified To Buy,35000,8/5/2026,Mia Fox,6/8/2026,6/21/2026,Send pricing,20,Pipeline,4121,Sales Pipeline
+Willow Health,Willow Health,Appointment Scheduled,22000,8/12/2026,Sara Kim,6/10/2026,6/18/2026,Discovery call,15,Pipeline,4122,Sales Pipeline
+Xenon Retail,Xenon Retail,Presentation Scheduled,29000,8/20/2026,Owen Boyd,6/12/2026,6/16/2026,,,Pipeline,4123,Sales Pipeline
+Yarrow Foods,Yarrow Foods,Qualified To Buy,26000,9/2/2026,Lena Ruiz,6/14/2026,6/24/2026,Demo booked,20,Pipeline,4124,Sales Pipeline
+Zephyr Air,Zephyr Air,Decision Maker Bought-In,92000,7/18/2026,Paul Adeyemi,5/22/2026,6/23/2026,Verbal confirmed,75,Best Case,4125,Sales Pipeline
+Aspen Digital,Aspen Digital,Presentation Scheduled,34000,8/8/2026,Mia Fox,6/2/2026,6/15/2026,,40,Pipeline,4126,Sales Pipeline
+Birch Logistics,Birch Logistics,Qualified To Buy,0,7/25/2026,Sara Kim,6/6/2026,6/20/2026,Confirm scope,,Pipeline,4127,Sales Pipeline
+Coral Media New Biz,Coral Media,Appointment Scheduled,25000,8/28/2026,,6/9/2026,6/13/2026,,,Pipeline,4128,Sales Pipeline
