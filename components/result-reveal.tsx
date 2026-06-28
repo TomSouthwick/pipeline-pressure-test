@@ -5,10 +5,14 @@ import { motion } from "motion/react";
 import { ScoreDial } from "./score-dial";
 import { CategoryCard } from "./category-card";
 import { DealExplorer, categoryKeyToTab, type DealExplorerTab } from "./deal-explorer";
+import { DealCardProvider } from "./deal-card";
 import { MethodologyPanel } from "./methodology-panel";
 import { OutputsBar } from "./outputs-bar";
 import { Button } from "@/components/ui/button";
 import { CRM_LABEL, type CrmGuess } from "@/lib/crm-detection";
+import { gradeStatus } from "@/lib/scoring-config";
+import { STATUS_STYLES } from "@/lib/status-styles";
+import { cn } from "@/lib/cn";
 import type { DiagnosticResult, Mapping, Status } from "@/lib/types";
 import type { CategoryKey } from "@/lib/deal-filters";
 
@@ -54,21 +58,49 @@ export function ResultReveal({
   const sampleLabel =
     isSample && crm?.crm ? `Sample: ${CRM_LABEL[crm.crm]} export` : null;
   const [activeTab, setActiveTab] = React.useState<DealExplorerTab>("top-risks");
+  const [flagFilter, setFlagFilter] = React.useState<string | null>(null);
+  const explorerRef = React.useRef<HTMLDivElement>(null);
 
   const tabForCategory = (key: DealExplorerTab) => activeTab === key;
+
+  // Selecting a tab always clears any active single-flag drill-down.
+  const selectTab = (tab: DealExplorerTab) => {
+    setActiveTab(tab);
+    setFlagFilter(null);
+  };
+
+  const scrollToExplorer = () =>
+    requestAnimationFrame(() =>
+      explorerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+
+  // Drill from a category finding into exactly the deals that tripped its flag.
+  const selectFinding = (key: CategoryKey, flagCode: string) => {
+    setActiveTab(categoryKeyToTab(key));
+    setFlagFilter(flagCode);
+    scrollToExplorer();
+  };
+
+  // Clearing the drill keeps the explorer anchored so the list doesn't appear
+  // to jump up as the filter chip is removed.
+  const clearFlagFilter = () => {
+    setFlagFilter(null);
+    scrollToExplorer();
+  };
 
   const categoryStatuses = Object.fromEntries(
     result.categories.map((c) => [c.key, c.status])
   ) as Partial<Record<CategoryKey, Status>>;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="w-full max-w-3xl mx-auto"
-    >
-      <MethodologyPanel
+    <DealCardProvider>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-3xl mx-auto"
+      >
+        <MethodologyPanel
         result={result}
         mapping={mapping}
         variant="header"
@@ -79,6 +111,8 @@ export function ResultReveal({
           </Button>
         }
       />
+
+      <ChecksNote result={result} />
 
       {insufficient ? (
         <div className="rounded-xl border border-warn/40 bg-warn/5 px-5 py-6 text-center">
@@ -96,7 +130,12 @@ export function ResultReveal({
           <ScoreDial score={result.score ?? 0} grade="" />
           <div className="text-center sm:text-left">
             <p className="eyebrow text-accent">Pipeline health</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+            <h2
+              className={cn(
+                "mt-1 text-2xl font-semibold tracking-tight",
+                STATUS_STYLES[gradeStatus(result.score ?? 0)].text
+              )}
+            >
               {result.grade}
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed max-w-sm">
@@ -154,7 +193,10 @@ export function ResultReveal({
               index={i}
               selected={!isCoverage && tabForCategory(categoryKeyToTab(c.key))}
               onSelect={
-                isCoverage ? undefined : () => setActiveTab(categoryKeyToTab(c.key))
+                isCoverage ? undefined : () => selectTab(categoryKeyToTab(c.key))
+              }
+              onFindingSelect={
+                isCoverage ? undefined : (code) => selectFinding(c.key, code)
               }
             />
           );
@@ -162,12 +204,16 @@ export function ResultReveal({
       </div>
 
       {!insufficient && (
-        <DealExplorer
-          rankedDeals={result.rankedDeals}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          categoryStatuses={categoryStatuses}
-        />
+        <div ref={explorerRef} className="scroll-mt-4">
+          <DealExplorer
+            rankedDeals={result.rankedDeals}
+            activeTab={activeTab}
+            onTabChange={selectTab}
+            categoryStatuses={categoryStatuses}
+            flagFilter={flagFilter}
+            onClearFlagFilter={clearFlagFilter}
+          />
+        </div>
       )}
 
       <motion.div
@@ -182,9 +228,8 @@ export function ResultReveal({
           onReset={onReset}
         />
       </motion.div>
-
-      <ChecksNote result={result} />
     </motion.div>
+    </DealCardProvider>
   );
 }
 
@@ -199,17 +244,19 @@ function BackIcon() {
 function ChecksNote({ result }: { result: DiagnosticResult }) {
   const [open, setOpen] = React.useState(false);
   return (
-    <div className="mt-6 text-xs text-muted-2">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="hover:text-muted transition-colors cursor-pointer"
-      >
-        {open ? "▾" : "▸"} {result.ranChecks.length} checks ran
-        {result.skippedChecks.length > 0
-          ? `, ${result.skippedChecks.length} skipped`
-          : ""}
-      </button>
+    <div className="-mt-4 mb-6 text-xs text-muted-2">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="hover:text-muted transition-colors cursor-pointer"
+        >
+          {open ? "▾" : "▸"} {result.ranChecks.length} checks ran
+          {result.skippedChecks.length > 0
+            ? `, ${result.skippedChecks.length} skipped`
+            : ""}
+        </button>
+      </div>
       {open && (
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

@@ -30,6 +30,31 @@ export function dealsForCategory(
   return deals.filter((d) => dealHasCategoryFlag(d, key));
 }
 
+/** Deals with no flag in this category — "clean" for that category's checks. */
+export function dealsCleanForCategory(
+  deals: RankedDeal[],
+  key: CategoryKey
+): RankedDeal[] {
+  if (key === "coverage") return [];
+  return deals.filter((d) => !dealHasCategoryFlag(d, key));
+}
+
+/** Deals that tripped one specific flag (e.g. "missing_next_step"). */
+export function dealsForFlag(
+  deals: RankedDeal[],
+  flagCode: string
+): RankedDeal[] {
+  return deals.filter((d) => d.flags.includes(flagCode));
+}
+
+/** Which category a per-deal flag belongs to, or null if it maps to none. */
+export function categoryForFlag(flagCode: string): CategoryKey | null {
+  for (const key of Object.keys(FLAGS_BY_CATEGORY) as CategoryKey[]) {
+    if (FLAGS_BY_CATEGORY[key].includes(flagCode)) return key;
+  }
+  return null;
+}
+
 export function dealsAtRisk(deals: RankedDeal[]): RankedDeal[] {
   return deals.filter((d) => d.riskScore > 0);
 }

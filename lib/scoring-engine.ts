@@ -92,26 +92,62 @@ function quarterEnd(d: Date): Date {
   return new Date(d.getFullYear(), endMonth + 1, 0); // last day of quarter
 }
 
-function buildRankedDeal(d: Deal): RankedDeal {
+/**
+ * Plain-English positives for a deal: the checks it passed among the fields
+ * that were actually mapped. We only credit a strength when the field exists
+ * (otherwise a blank "owner" column would read as "no owner assigned" AND get
+ * no credit — we want neither). Insight, not instruction.
+ */
+function buildStrengths(d: Deal, has: Record<string, boolean>): string[] {
+  const tripped = new Set(d.flags.map((f) => f.code));
+  const out: string[] = [];
+
+  if (has.amount && !tripped.has("missing_amount")) out.push("Amount set");
+  if (
+    has.closeDate &&
+    !tripped.has("missing_close_date") &&
+    !tripped.has("overdue")
+  )
+    out.push("Close date on track");
+  if (has.owner && !tripped.has("missing_owner")) out.push("Owner assigned");
+  if (has.nextStep && !tripped.has("missing_next_step"))
+    out.push("Next step defined");
+  if (
+    has.lastActivity &&
+    !tripped.has("stale_14") &&
+    !tripped.has("stale_30") &&
+    !tripped.has("stale_60")
+  )
+    out.push("Recently active");
+
+  return out;
+}
+
+function buildRankedDeal(d: Deal, has: Record<string, boolean>): RankedDeal {
   const sortedFlags = [...d.flags].sort((a, b) => b.weight - a.weight);
   const reasons = sortedFlags.map((f) => f.reason);
   const flags = sortedFlags.map((f) => f.code);
   const riskScore = sortedFlags.reduce((s, f) => s + f.weight, 0);
-  const closeDate =
-    d.closeDate != null
-      ? d.closeDate.toISOString().slice(0, 10)
-      : null;
+  const iso = (date: Date | null) =>
+    date != null ? date.toISOString().slice(0, 10) : null;
   return {
     rowIndex: d.index,
     name: d.name,
     amount: d.amount,
     stage: d.stage,
     owner: d.owner,
-    closeDate,
+    closeDate: iso(d.closeDate),
     riskScore,
     primaryReason: sortedFlags[0]?.reason ?? "",
     reasons,
     flags,
+    strengths: buildStrengths(d, has),
+    createdDate: iso(d.createdDate),
+    lastActivity: iso(d.lastActivity),
+    nextStep: d.nextStep,
+    probability: d.probability,
+    forecastCategory: d.forecastCategory,
+    daysSinceActivity: d.daysSinceActivity,
   };
 }
 
@@ -376,6 +412,13 @@ export function runDiagnostic(
 
   const categories: CategoryResult[] = [hygiene, momentum, concentration, coverage];
 
+  // Order every category's findings most-impactful-first so the bullet colours
+  // descend (red → amber → muted) consistently across all cards. Stable sort
+  // keeps original order among equal-impact findings.
+  for (const c of categories) {
+    c.findings.sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+  }
+
   // -- Overall score: rescale applicable categories to 100 -----------------
   const applicable = categories.filter((c) => c.score != null);
   const sumScore = applicable.reduce((s, c) => s + (c.score ?? 0), 0);
@@ -384,7 +427,7 @@ export function runDiagnostic(
   const score = insufficientData ? null : Math.round((100 * sumScore) / sumMax);
 
   const rankedDeals: RankedDeal[] = deals
-    .map(buildRankedDeal)
+    .map((d) => buildRankedDeal(d, has))
     .sort(
       (a, b) =>
         b.riskScore - a.riskScore ||
@@ -514,6 +557,7 @@ function scoreHygiene(
       detail: "",
       severity: findingSeverityFromPoints(points),
       points,
+      flagCode: code,
     });
   }
   if (findings.length === 0) {
@@ -584,6 +628,7 @@ function scoreMomentum(
       detail: "",
       severity: findingSeverityFromPoints(points),
       points,
+      flagCode: "stale_60",
     });
   }
   if (counts.stale_30) {
@@ -593,15 +638,17 @@ function scoreMomentum(
       detail: "",
       severity: findingSeverityFromPoints(points),
       points,
+      flagCode: "stale_30",
     });
   }
   if (counts.zombie) {
     const points = momentumPoints("zombie");
     findings.push({
-      label: `${counts.zombie} zombie deals (90+ days old, still early stage)`,
+      label: `${counts.zombie} zombie ${counts.zombie === 1 ? "deal" : "deals"} (90+ days old, still early stage)`,
       detail: "",
       severity: findingSeverityFromPoints(points),
       points,
+      flagCode: "zombie",
     });
   }
   if (findings.length === 0)
@@ -710,6 +757,7 @@ function scoreConcentration(
         label: `${lateStale.length} late-stage ${lateStale.length === 1 ? "deal has" : "deals have"} gone quiet (30+ days)`,
         detail: "highest-risk signal",
         severity: "bad",
+        flagCode: "late_stage_stale",
       });
       findingPens.push(pen);
     }

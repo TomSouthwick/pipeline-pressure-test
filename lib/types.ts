@@ -55,6 +55,13 @@ export interface Finding {
    * the flag. Omitted for positive ("all clear") findings.
    */
   points?: number;
+  /**
+   * The per-deal flag code this finding represents (e.g. "missing_next_step"),
+   * when one exists. Lets the UI make the bullet clickable to filter the deal
+   * list to exactly the deals that tripped it. Omitted for portfolio-level
+   * findings with no per-deal flag (e.g. close-date bunching, coverage ratios).
+   */
+  flagCode?: string;
 }
 
 export interface CategoryResult {
@@ -79,6 +86,22 @@ export interface RankedDeal {
   primaryReason: string;
   reasons: string[];
   flags: string[];
+  /**
+   * Plain-English positives for this deal — the checks it passed among the
+   * fields that were actually mapped. Drives the "What's healthy" line in the
+   * deal detail. Empty when nothing relevant was mapped or everything tripped.
+   */
+  strengths: string[];
+  // --- Extra mapped fields, surfaced in the full deal card. Null when the
+  // column wasn't mapped or the cell was blank. ---
+  createdDate: string | null;
+  lastActivity: string | null;
+  nextStep: string | null;
+  /** CRM win probability for this deal, 0..1, when provided. */
+  probability: number | null;
+  forecastCategory: string | null;
+  /** Days since last activity (null when no last-activity column). */
+  daysSinceActivity: number | null;
 }
 
 export interface WorstDeal {

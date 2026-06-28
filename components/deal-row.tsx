@@ -3,6 +3,7 @@
 import type { RankedDeal } from "@/lib/types";
 import { riskTier, RISK_TIER_META, type RiskTier } from "@/lib/deal-list-utils";
 import { FLAG_META } from "@/lib/scoring-config";
+import { useDealCard } from "./deal-card";
 import { cn } from "@/lib/cn";
 
 function money(n: number | null): string {
@@ -76,7 +77,8 @@ export function DealRow({
   expanded?: boolean;
   onToggle?: () => void;
 }) {
-  const expandable = !!onToggle && deal.reasons.length > 0;
+  const hasDetail = deal.reasons.length > 0 || deal.strengths.length > 0;
+  const expandable = !!onToggle && hasDetail;
 
   return (
     <>
@@ -172,16 +174,15 @@ export function DealRow({
         </div>
       </div>
 
-      {expanded && deal.reasons.length > 0 && (
-        <DealDetail deal={deal} />
-      )}
+      {expanded && hasDetail && <DealDetail deal={deal} />}
     </>
   );
 }
 
-function DealDetail({ deal }: { deal: RankedDeal }) {
+export function DealDetail({ deal }: { deal: RankedDeal }) {
   const breakdown = flagBreakdown(deal.flags);
   const topInsight = breakdown[0]?.insight;
+  const openCard = useDealCard();
 
   return (
     <div className="px-3 py-3 bg-surface/50 border-b border-border/60 text-xs text-muted sm:pl-12 space-y-2">
@@ -208,6 +209,24 @@ function DealDetail({ deal }: { deal: RankedDeal }) {
           <li key={i}>· {r}</li>
         ))}
       </ul>
+      {deal.strengths.length > 0 && (
+        <p className="leading-relaxed pt-1">
+          <span className="font-medium text-good">What&apos;s healthy: </span>
+          {deal.strengths.join(" · ")}
+        </p>
+      )}
+      {openCard && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openCard(deal);
+          }}
+          className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline cursor-pointer"
+        >
+          View full details →
+        </button>
+      )}
     </div>
   );
 }
