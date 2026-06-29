@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { DiagnosticResult } from "@/lib/types";
 import { annotatedToCsv, downloadText } from "@/lib/csv";
 import { generatePdf } from "@/lib/pdf";
+import { track } from "@/lib/analytics";
 
 interface OutputsBarProps {
   result: DiagnosticResult;
@@ -13,13 +14,19 @@ interface OutputsBarProps {
 
 export function OutputsBar({ result, originalHeaders, onReset }: OutputsBarProps) {
   const downloadCsv = () => {
+    track("report_downloaded", { format: "csv" });
     const csv = annotatedToCsv(originalHeaders, result.annotatedRows);
     downloadText("pipeline-annotated.csv", csv, "text/csv;charset=utf-8");
   };
 
+  const downloadPdf = () => {
+    track("report_downloaded", { format: "pdf" });
+    generatePdf(result);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button variant="primary" size="md" onClick={() => generatePdf(result)}>
+      <Button variant="primary" size="md" onClick={downloadPdf}>
         <FileIcon />
         Download PDF report
       </Button>
