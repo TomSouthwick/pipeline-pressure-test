@@ -21,6 +21,21 @@ function money(n: number | null): string {
   });
 }
 
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
+}
+
+function pct(p: number | null): string {
+  return p == null ? "—" : `${Math.round(p * 100)}%`;
+}
+
 export function DealDrawer({
   open,
   onClose,
@@ -156,6 +171,7 @@ export function DealDrawer({
                       <th className="px-3 py-2 font-medium hidden md:table-cell">
                         <SortBtn label="Close" active={sortKey === "closeDate"} onClick={() => toggleSort("closeDate")} />
                       </th>
+                      <th className="px-3 py-2 font-medium hidden md:table-cell">Prob</th>
                       <th className="px-3 py-2 font-medium">Primary flag</th>
                       <th className="px-3 py-2 font-medium w-4" aria-label="Expand" />
                     </tr>
@@ -200,7 +216,10 @@ export function DealDrawer({
                               <SeverityBadge score={d.riskScore} />
                             </td>
                             <td className="px-3 py-2.5 tnum text-xs text-muted-2 hidden md:table-cell whitespace-nowrap">
-                              {d.closeDate ?? "—"}
+                              {fmtDate(d.closeDate)}
+                            </td>
+                            <td className="px-3 py-2.5 tnum text-xs text-muted-2 hidden md:table-cell whitespace-nowrap">
+                              {pct(d.probability)}
                             </td>
                             <td className="px-3 py-2.5 text-xs text-muted max-w-[220px] truncate">
                               {d.primaryReason || "—"}
@@ -211,7 +230,7 @@ export function DealDrawer({
                           </tr>
                           {isExpanded && hasDetail && (
                             <tr className="border-b border-border/60 last:border-0">
-                              <td colSpan={7} className="p-0">
+                              <td colSpan={8} className="p-0">
                                 <DealDetail deal={d} />
                               </td>
                             </tr>
@@ -257,6 +276,8 @@ export function DealDrawer({
                       <p className="mt-1 text-xs text-muted">
                         {money(d.amount)}
                         {d.stage ? ` · ${d.stage}` : ""}
+                        {d.closeDate ? ` · ${fmtDate(d.closeDate)}` : ""}
+                        {d.probability != null ? ` · ${pct(d.probability)}` : ""}
                       </p>
                       {d.primaryReason && (
                         <p className="mt-1 text-[11px] text-muted-2">{d.primaryReason}</p>

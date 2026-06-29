@@ -1,8 +1,17 @@
 # Spec: Relationships / Buyer-Coverage module
 
-**Status:** Proposed (not started)
+**Status:** Proposed — **opt-in enrichment, NOT a core category. Off the first-run path.**
 **Owner:** TBD
 **Last updated:** 2026-06-29
+
+> **Priority decision (2026-06-29):** This is explicitly *not* the next milestone and must
+> not become a fourth always-on category. Opportunity exports almost never carry contact
+> titles/roles, so a buyer-coverage category would sit permanently NA for most users — which
+> *erodes* trust rather than adding value, and dilutes the thing that actually creates the
+> "wow" on a single CSV (momentum + concentration + hygiene). Build the core report
+> (incl. the PDF) to be great first. Treat this as a **Phase-2, data-gated enrichment** that
+> only lights up when the user happens to bring contact data, plus a one-line teaser that
+> educates everyone else without friction. See §6 (teaser) and §8 (sequencing).
 
 ---
 
@@ -13,8 +22,10 @@ the **deal record**. It says nothing about **who you're selling to**. A deal can
 spotless on every mapped field and still be single-threaded to one junior contact, which
 is one of the most common reasons "Commit" deals slip late.
 
-This module adds a fourth scored lens — **Relationships / buyer coverage** — that answers:
-*are we engaged with enough people, senior enough to actually sign?*
+This module adds an opt-in lens — **Relationships / buyer coverage** — that answers:
+*are we engaged with enough people, senior enough to actually sign?* It is an **enrichment
+that activates only when contact data is present**, never a scored category that shows by
+default.
 
 ## 2. The data constraint (read this first)
 
