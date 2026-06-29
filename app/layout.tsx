@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,9 +18,7 @@ const title = "Pipeline Pressure Test — score your open pipeline in seconds";
 const description =
   "Drop in a CSV of your open opportunities and get a 0–100 pipeline health score, category breakdowns, and the deals quietly killing your forecast. Runs entirely in your browser — no data leaves your machine.";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -40,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  themeColor: "#ffffff",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
