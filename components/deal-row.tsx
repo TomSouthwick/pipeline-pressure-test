@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import type { RankedDeal } from "@/lib/types";
 import { riskTier, RISK_TIER_META, type RiskTier } from "@/lib/deal-list-utils";
 import { FLAG_META } from "@/lib/scoring-config";
@@ -15,19 +16,36 @@ function money(n: number | null): string {
   });
 }
 
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
+}
+
+function pct(p: number | null): string {
+  return p == null ? "—" : `${Math.round(p * 100)}%`;
+}
+
 /**
- * Shared column template so the desktop row and every list header line up
- * exactly. Each list owns its own header, but reuses these widths. The chevron
- * slot is always reserved so expandable and non-expandable lists stay aligned.
+ * Shared column template so desktop rows and list headers line up exactly.
+ * Every data column is always shown on the desktop table (sm+); the name column
+ * flexes and truncates (with a hover tooltip) to make room. Below sm the row
+ * collapses to the stacked mobile card, which lists the same fields inline.
  */
 export const DEAL_COLS = {
   rank: "w-5 shrink-0",
   name: "flex-1 min-w-0",
-  amount: "w-24 text-right shrink-0",
-  stage: "w-[100px] shrink-0 hidden md:block",
-  severity: "w-[96px] shrink-0",
-  flag: "w-[180px] shrink-0 hidden lg:block",
-  chevron: "w-4 shrink-0",
+  amount: "w-20 text-right shrink-0",
+  closeDate: "w-[78px] shrink-0",
+  stage: "w-[92px] shrink-0",
+  probability: "w-[44px] text-right shrink-0",
+  severity: "w-[92px] shrink-0",
+  flag: "w-[150px] shrink-0",
 } as const;
 
 const TIER_BADGE: Record<RiskTier, string> = {
@@ -69,36 +87,41 @@ function flagBreakdown(flags: string[]) {
 export function DealRow({
   deal,
   rank,
-  expanded = false,
-  onToggle,
+  showSeverity = true,
+  reason,
 }: {
   deal: RankedDeal;
   rank?: number;
-  expanded?: boolean;
-  onToggle?: () => void;
+  showSeverity?: boolean;
+  /** Override issue column text (e.g. category-scoped reason). */
+  reason?: string;
 }) {
+  const openCard = useDealCard();
   const hasDetail = deal.reasons.length > 0 || deal.strengths.length > 0;
-  const expandable = !!onToggle && hasDetail;
+  const clickable = !!openCard && hasDetail;
+  const issueText = reason ?? deal.primaryReason;
+
+  const rowProps = clickable
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick: () => openCard!(deal),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openCard!(deal);
+          }
+        },
+      }
+    : {};
 
   return (
     <>
       <div
-        role={expandable ? "button" : undefined}
-        tabIndex={expandable ? 0 : undefined}
-        onClick={expandable ? onToggle : undefined}
-        onKeyDown={
-          expandable
-            ? (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onToggle?.();
-                }
-              }
-            : undefined
-        }
+        {...rowProps}
         className={cn(
           "hidden sm:flex items-center gap-3 px-3 py-2.5 border-b border-border/60 last:border-0",
-          expandable && "cursor-pointer hover:bg-surface/80"
+          clickable && "cursor-pointer hover:bg-surface/80"
         )}
       >
         {rank != null && (
@@ -107,6 +130,7 @@ export function DealRow({
           </span>
         )}
         <span
+          title={deal.name}
           className={cn(
             "text-sm font-medium text-foreground truncate",
             DEAL_COLS.name
@@ -119,37 +143,30 @@ export function DealRow({
         >
           {money(deal.amount)}
         </span>
-        <span className={cn("text-xs text-muted truncate", DEAL_COLS.stage)}>
+        <span className={cn("tnum text-xs text-muted whitespace-nowrap", DEAL_COLS.closeDate)}>
+          {fmtDate(deal.closeDate)}
+        </span>
+        <span title={deal.stage ?? undefined} className={cn("text-xs text-muted truncate", DEAL_COLS.stage)}>
           {deal.stage ?? "—"}
         </span>
-        <span className={DEAL_COLS.severity}>
-          <SeverityBadge score={deal.riskScore} />
+        <span className={cn("tnum text-xs text-muted whitespace-nowrap", DEAL_COLS.probability)}>
+          {pct(deal.probability)}
         </span>
-        <span className={cn("text-xs text-muted truncate", DEAL_COLS.flag)}>
-          {deal.primaryReason || "—"}
-        </span>
-        <span className={cn("text-muted-2 text-xs", DEAL_COLS.chevron)}>
-          {expandable ? (expanded ? "▾" : "▸") : ""}
+        {showSeverity && (
+          <span className={DEAL_COLS.severity}>
+            <SeverityBadge score={deal.riskScore} />
+          </span>
+        )}
+        <span title={issueText || undefined} className={cn("text-xs text-muted truncate", DEAL_COLS.flag)}>
+          {issueText || "—"}
         </span>
       </div>
 
       <div
-        role={expandable ? "button" : undefined}
-        tabIndex={expandable ? 0 : undefined}
-        onClick={expandable ? onToggle : undefined}
-        onKeyDown={
-          expandable
-            ? (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onToggle?.();
-                }
-              }
-            : undefined
-        }
+        {...rowProps}
         className={cn(
           "sm:hidden rounded-xl border border-border bg-surface/70 p-3",
-          expandable && "cursor-pointer"
+          clickable && "cursor-pointer"
         )}
       >
         <div className="flex items-start gap-3">
@@ -161,20 +178,18 @@ export function DealRow({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium truncate">{deal.name}</span>
-              <SeverityBadge score={deal.riskScore} />
+              {showSeverity && <SeverityBadge score={deal.riskScore} />}
             </div>
             <p className="mt-1 text-xs text-muted">
               {money(deal.amount)}
               {deal.stage ? ` · ${deal.stage}` : ""}
+              {deal.closeDate ? ` · ${fmtDate(deal.closeDate)}` : ""}
+              {deal.probability != null ? ` · ${pct(deal.probability)}` : ""}
             </p>
-            <p className="mt-1 text-[11px] text-muted-2">
-              {deal.primaryReason || "—"}
-            </p>
+            <p className="mt-1 text-[11px] text-muted-2">{issueText || "—"}</p>
           </div>
         </div>
       </div>
-
-      {expanded && hasDetail && <DealDetail deal={deal} />}
     </>
   );
 }
@@ -231,25 +246,43 @@ export function DealDetail({ deal }: { deal: RankedDeal }) {
   );
 }
 
+/** Up/down chevrons; the active sort direction is solid, the rest faint. */
+function SortArrows({ active, ascending }: { active: boolean; ascending: boolean }) {
+  return (
+    <svg width="7" height="10" viewBox="0 0 7 10" aria-hidden className="shrink-0">
+      <path d="M3.5 0 L6.5 3.5 L0.5 3.5 Z" fill="currentColor" opacity={active && ascending ? 1 : 0.3} />
+      <path d="M3.5 10 L0.5 6.5 L6.5 6.5 Z" fill="currentColor" opacity={active && !ascending ? 1 : 0.3} />
+    </svg>
+  );
+}
+
 export function SortBtn({
   label,
   active,
   onClick,
+  sortable = false,
+  ascending = false,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  /** Show the asc/desc indicator (use on sortable column headers + toolbar). */
+  sortable?: boolean;
+  /** Current direction when this is the active sort. */
+  ascending?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-sort={active ? (ascending ? "ascending" : "descending") : undefined}
       className={cn(
-        "cursor-pointer hover:text-foreground",
+        "inline-flex items-center gap-1 cursor-pointer hover:text-foreground",
         active ? "text-foreground" : "text-muted"
       )}
     >
       {label}
+      {sortable && <SortArrows active={active} ascending={ascending} />}
     </button>
   );
 }

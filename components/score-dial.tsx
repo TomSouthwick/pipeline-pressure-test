@@ -51,7 +51,8 @@ function lerp(t: number, pts: [number, number][]): number {
 }
 
 // Physics-based HSL arc: red → orange → amber → yellow-green → green.
-function arcColor(f: number): string {
+// Exported so the headline grade text can match the gauge readout colour exactly.
+export function arcColor(f: number): string {
   const h = lerp(f, [
     [0,    4],
     [0.28, 18],
@@ -68,19 +69,10 @@ function arcColor(f: number): string {
 /** Scores at/above this get an emoji burst on reveal. */
 const CELEBRATION_THRESHOLD = 85;
 
-const CELEBRATION_EMOJIS = [
-  "😂",
-  "🤣",
-  "😎",
-  "💸",
-  "🤑",
-  "💵",
-  "🎰",
-  "🥇",
-  "💲",
-  "💳",
-  "🪎",
-];
+// Money-only set — celebratory without reading as meme/gambling, and every
+// glyph is widely supported (no tofu). Keeps the burst on-brand for a clinical
+// instrument: a tasteful confetti, not a casino.
+const CELEBRATION_EMOJIS = ["💸", "🤑", "💵", "💲", "💰"];
 
 function shuffle<T>(items: readonly T[]): T[] {
   const out = [...items];
@@ -91,7 +83,7 @@ function shuffle<T>(items: readonly T[]): T[] {
   return out;
 }
 
-const CELEBRATION_EMOJI_COUNT = 100;
+const CELEBRATION_EMOJI_COUNT = 32;
 
 function spawnCelebration(
   layer: HTMLElement,
@@ -197,6 +189,9 @@ export function ScoreDial({
   const readoutRef = React.useRef<HTMLDivElement>(null);
   const burstRef = React.useRef<HTMLDivElement>(null);
   const proxy = React.useRef({ value: 0 });
+  // The idle hero gauge loops every cycle; celebrate only the first settle per
+  // page load so the burst greets visitors without spamming over the copy.
+  const idleCelebratedRef = React.useRef(false);
   const [frac, setFrac] = React.useState(reduce ? target / 100 : 0);
 
   // revertOnUpdate kills the previous timeline and re-runs setup on dep change.
@@ -275,7 +270,16 @@ export function ScoreDial({
           duration: 0.72,
           ease: "back.out(3)",
           onStart: () => {
-            if (burstRef.current && dialRef.current && target >= CELEBRATION_THRESHOLD) {
+            // Fire on real results every time; on the looping idle hero gauge,
+            // only on the first settle per page load.
+            const allowIdleBurst = idle && !idleCelebratedRef.current;
+            if (
+              (!idle || allowIdleBurst) &&
+              burstRef.current &&
+              dialRef.current &&
+              target >= CELEBRATION_THRESHOLD
+            ) {
+              if (idle) idleCelebratedRef.current = true;
               spawnCelebration(
                 burstRef.current,
                 dialRef.current,

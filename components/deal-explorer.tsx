@@ -8,12 +8,13 @@ import {
   dealsCleanForCategory,
   dealsForFlag,
   dealsTopRisk,
+  primaryReasonForCategory,
 } from "@/lib/deal-filters";
 import { riskTier } from "@/lib/deal-list-utils";
 import { FLAG_META } from "@/lib/scoring-config";
 import { STATUS_STYLES } from "@/lib/status-styles";
 import { ForecastKillersList } from "./worst-deals";
-import { DealRow, DEAL_COLS } from "./deal-row";
+import { DealListTable } from "./deal-list-table";
 import { DealDrawer } from "./deal-drawer";
 import { cn } from "@/lib/cn";
 
@@ -122,28 +123,29 @@ export function DealExplorer({
 
   return (
     <div className="mt-8">
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        {AGGREGATE_TABS.map((tab) => (
-          <ExplorerTab
-            key={tab.id}
-            label={tab.label}
-            active={activeTab === tab.id}
-            onClick={() => onTabChange(tab.id)}
-          />
-        ))}
-        <span className="mx-1 h-4 w-px bg-border-strong" aria-hidden />
-        {CATEGORY_TABS.map((tab) => (
-          <ExplorerTab
-            key={tab.id}
-            label={tab.label}
-            active={activeTab === tab.id}
-            status={categoryStatuses?.[tab.id]}
-            onClick={() => onTabChange(tab.id)}
-          />
-        ))}
-      </div>
+      <div className="max-h-[min(480px,50vh)] overflow-y-auto rounded-xl border border-border bg-surface/40">
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-border bg-surface/95 backdrop-blur-sm px-3 py-3 sm:px-4">
+          {AGGREGATE_TABS.map((tab) => (
+            <ExplorerTab
+              key={tab.id}
+              label={tab.label}
+              active={activeTab === tab.id}
+              onClick={() => onTabChange(tab.id)}
+            />
+          ))}
+          <span className="mx-1 h-4 w-px bg-border-strong" aria-hidden />
+          {CATEGORY_TABS.map((tab) => (
+            <ExplorerTab
+              key={tab.id}
+              label={tab.label}
+              active={activeTab === tab.id}
+              status={categoryStatuses?.[tab.id]}
+              onClick={() => onTabChange(tab.id)}
+            />
+          ))}
+        </div>
 
-      <div className="max-h-[min(480px,50vh)] overflow-y-auto rounded-xl border border-border bg-surface/40 p-3 sm:p-4">
+        <div className="p-3 sm:p-4">
         {activeTab === "top-risks" && (
           <>
             <DealExplorerPanelHeader eyebrow="Top risks">
@@ -181,6 +183,7 @@ export function DealExplorer({
             onBrowse={() => setDrawerOpen(true)}
           />
         )}
+        </div>
       </div>
 
       <DealDrawer
@@ -256,32 +259,22 @@ function CategoryViewToggle({
   );
 }
 
-/** The shared deal table used for flagged / clean / flag-filtered lists. */
-function CategoryDealTable({ deals }: { deals: RankedDeal[] }) {
-  const [expandedRow, setExpandedRow] = React.useState<number | null>(null);
+/** Category deal table: no severity column, category-scoped issue text. */
+function CategoryDealTable({
+  deals,
+  category,
+}: {
+  deals: RankedDeal[];
+  category: CategoryKey;
+}) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <div className="hidden sm:flex items-center gap-3 px-3 py-2 border-b border-border bg-surface/80 text-xs text-muted">
-        <span className={DEAL_COLS.name}>Deal</span>
-        <span className={DEAL_COLS.amount}>Amount</span>
-        <span className={DEAL_COLS.stage}>Stage</span>
-        <span className={DEAL_COLS.severity}>Severity</span>
-        <span className={DEAL_COLS.flag}>Primary flag</span>
-        <span className={DEAL_COLS.chevron} />
-      </div>
-      <div className="sm:divide-y sm:divide-border/60 flex flex-col gap-2 sm:gap-0 p-2 sm:p-0">
-        {deals.map((d) => (
-          <DealRow
-            key={d.rowIndex}
-            deal={d}
-            expanded={expandedRow === d.rowIndex}
-            onToggle={() =>
-              setExpandedRow((prev) => (prev === d.rowIndex ? null : d.rowIndex))
-            }
-          />
-        ))}
-      </div>
-    </div>
+    <DealListTable
+      deals={deals}
+      showSeverity={false}
+      issueHeader="Issue here"
+      riskSortLabel="Risk"
+      getIssueText={(d) => primaryReasonForCategory(d, category)}
+    />
   );
 }
 
@@ -334,7 +327,9 @@ function CategoryDealList({
           <span className="tnum">{filtered.length}</span> deal
           {filtered.length === 1 ? "" : "s"} with &ldquo;{flagLabel}&rdquo;
         </DealExplorerPanelHeader>
-        {filtered.length > 0 && <CategoryDealTable deals={filtered} />}
+        {filtered.length > 0 && (
+          <CategoryDealTable deals={filtered} category={category} />
+        )}
       </div>
     );
   }
@@ -370,7 +365,7 @@ function CategoryDealList({
             : "No deals flagged — every deal passes this category's checks."}
         </p>
       ) : (
-        <CategoryDealTable deals={deals} />
+        <CategoryDealTable deals={deals} category={category} />
       )}
     </div>
   );

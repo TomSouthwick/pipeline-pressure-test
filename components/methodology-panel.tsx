@@ -18,10 +18,10 @@ const CATEGORY_BLURBS: Record<
 
 function categoryLine(category: DiagnosticResult["categories"][number]) {
   if (category.score == null && category.key === "coverage") {
-    return "Not scored — no target entered";
+    return "Not scored: no target entered";
   }
   if (category.score == null) {
-    return "Not scored — not enough data in your export";
+    return "Not scored: not enough data in your export";
   }
   return CATEGORY_BLURBS[category.key];
 }
@@ -41,8 +41,10 @@ function MethodologyContent({ result }: { result: DiagnosticResult }) {
           Your{" "}
           <strong className="font-medium text-foreground">0–100 score</strong>{" "}
           combines up to four categories (25 points each), rescaled to 100.
-          Categories without enough data are skipped — if you didn&apos;t enter
-          a target, Coverage is omitted and the rest rescale.
+          We run the same checks on every deal, weight each issue by severity,
+          and combine the results into those category scores. Categories without
+          enough data are skipped. If you didn&apos;t enter a target, Coverage
+          is omitted and the rest rescale.
         </p>
       )}
 
@@ -52,14 +54,14 @@ function MethodologyContent({ result }: { result: DiagnosticResult }) {
           <ul className="space-y-1.5 text-xs">
             {result.categories.map((c) => (
               <li key={c.key}>
-                <strong className="text-foreground">{c.label}</strong> —{" "}
+                <strong className="text-foreground">{c.label}</strong>:{" "}
                 {categoryLine(c)}
               </li>
             ))}
           </ul>
           <p className="mt-2 text-xs text-muted-2">
             A finding&apos;s dot colour reflects how much it drags the score, not
-            how many deals it touches — so a common but minor issue stays muted.
+            how many deals it touches, so a common but minor issue stays muted.
           </p>
         </div>
       )}

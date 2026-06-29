@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { dealsAtRisk, dealsForCategory } from "./deal-filters";
+import {
+  dealsAtRisk,
+  dealsForCategory,
+  primaryReasonForCategory,
+} from "./deal-filters";
 import type { RankedDeal } from "./types";
 
 function deal(
@@ -82,5 +86,20 @@ describe("deal-filters", () => {
     const atRisk = dealsAtRisk(deals);
     expect(atRisk).toHaveLength(4);
     expect(atRisk.every((d) => d.riskScore > 0)).toBe(true);
+  });
+
+  it("primaryReasonForCategory returns category-scoped reason from parallel arrays", () => {
+    const mixed = deal({
+      rowIndex: 5,
+      name: "Mixed",
+      riskScore: 20,
+      flags: ["late_stage_stale", "missing_owner"],
+      reasons: ["Late-stage commit, no activity", "Missing owner"],
+    });
+    expect(primaryReasonForCategory(mixed, "hygiene")).toBe("Missing owner");
+    expect(primaryReasonForCategory(mixed, "concentration")).toBe(
+      "Late-stage commit, no activity"
+    );
+    expect(primaryReasonForCategory(mixed, "coverage")).toBe("");
   });
 });
