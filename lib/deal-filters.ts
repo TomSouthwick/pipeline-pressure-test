@@ -67,3 +67,21 @@ export function dealsAtRisk(deals: RankedDeal[]): RankedDeal[] {
 export function dealsTopRisk(deals: RankedDeal[]): RankedDeal[] {
   return deals.filter((d) => d.riskScore >= RISK_TIERS.atRisk);
 }
+
+/**
+ * Highest-weight reason for flags in this category. Uses parallel flags/reasons
+ * arrays (weight-sorted); returns "" for coverage or when no category flag matches.
+ */
+export function primaryReasonForCategory(
+  deal: RankedDeal,
+  key: CategoryKey
+): string {
+  if (key === "coverage") return "";
+  const codes = new Set(FLAGS_BY_CATEGORY[key]);
+  for (let i = 0; i < deal.flags.length; i++) {
+    if (codes.has(deal.flags[i])) {
+      return deal.reasons[i] ?? "";
+    }
+  }
+  return "";
+}

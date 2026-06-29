@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
-import { ScoreDial } from "./score-dial";
+import { motion, useReducedMotion } from "motion/react";
+import { ScoreDial, arcColor } from "./score-dial";
 import { CategoryCard } from "./category-card";
 import { DealExplorer, categoryKeyToTab, type DealExplorerTab } from "./deal-explorer";
 import { DealCardProvider } from "./deal-card";
@@ -10,9 +10,7 @@ import { MethodologyPanel } from "./methodology-panel";
 import { OutputsBar } from "./outputs-bar";
 import { Button } from "@/components/ui/button";
 import { CRM_LABEL, type CrmGuess } from "@/lib/crm-detection";
-import { gradeStatus } from "@/lib/scoring-config";
-import { STATUS_STYLES } from "@/lib/status-styles";
-import { cn } from "@/lib/cn";
+import { SalesforceIcon, HubSpotIcon, CRM_BRAND } from "./crm-icons";
 import type { DiagnosticResult, Mapping, Status } from "@/lib/types";
 import type { CategoryKey } from "@/lib/deal-filters";
 
@@ -53,6 +51,18 @@ export function ResultReveal({
   onBack: () => void;
   onReset: () => void;
 }) {
+  const reduce = useReducedMotion();
+  // Hold the whole health summary back until the gauge count-up has landed,
+  // then bleed it in. Reduced-motion shows it at once (the gauge doesn't run).
+  const [revealSummary, setRevealSummary] = React.useState(false);
+  React.useEffect(() => {
+    if (reduce) {
+      setRevealSummary(true);
+      return;
+    }
+    const t = setTimeout(() => setRevealSummary(true), 1900);
+    return () => clearTimeout(t);
+  }, [reduce]);
   const insufficient = result.meta.insufficientData;
   const weighting = weightingSummary(result);
   const sampleLabel =
@@ -98,7 +108,7 @@ export function ResultReveal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-3xl mx-auto"
+        className="w-full max-w-4xl mx-auto"
       >
         <MethodologyPanel
         result={result}
@@ -130,11 +140,16 @@ export function ResultReveal({
           <ScoreDial score={result.score ?? 0} grade="" />
           <div className="text-center sm:text-left">
             <p className="eyebrow text-accent">Pipeline health</p>
+            <div
+              className="transition-all duration-700 ease-out"
+              style={{
+                opacity: revealSummary ? 1 : 0,
+                transform: revealSummary ? "translateY(0)" : "translateY(6px)",
+              }}
+            >
             <h2
-              className={cn(
-                "mt-1 text-2xl font-semibold tracking-tight",
-                STATUS_STYLES[gradeStatus(result.score ?? 0)].text
-              )}
+              className="mt-1 text-2xl font-semibold tracking-tight"
+              style={{ color: arcColor((result.score ?? 0) / 100) }}
             >
               {result.grade}
             </h2>
@@ -172,11 +187,39 @@ export function ResultReveal({
                 probability.
               </p>
             )}
-            {sampleLabel && (
-              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-muted">
+            {sampleLabel && crm?.crm && (
+              <p
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium text-muted"
+                style={{
+                  borderColor: CRM_BRAND[crm.crm],
+                  backgroundColor: `${CRM_BRAND[crm.crm]}14`,
+                }}
+              >
+                {crm.crm === "salesforce" ? (
+                  <SalesforceIcon size={13} />
+                ) : (
+                  <HubSpotIcon size={13} />
+                )}
                 {sampleLabel}
               </p>
             )}
+            {!isSample && crm?.crm && crm.confidence >= 0.5 && (
+              <p
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium text-muted"
+                style={{
+                  borderColor: CRM_BRAND[crm.crm],
+                  backgroundColor: `${CRM_BRAND[crm.crm]}14`,
+                }}
+              >
+                {crm.crm === "salesforce" ? (
+                  <SalesforceIcon size={13} />
+                ) : (
+                  <HubSpotIcon size={13} />
+                )}
+                {CRM_LABEL[crm.crm]} export
+              </p>
+            )}
+            </div>
           </div>
         </div>
       )}

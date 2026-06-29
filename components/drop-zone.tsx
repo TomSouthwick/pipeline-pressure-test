@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { HubSpotIcon, SalesforceIcon } from "@/components/crm-icons";
 import { cn } from "@/lib/cn";
 
 interface DropZoneProps {
@@ -98,11 +99,11 @@ export function DropZone({
 
       <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
         <Button variant="secondary" size="md" onClick={onSampleSalesforce}>
-          <SparkIcon />
+          <SalesforceIcon />
           Try Salesforce sample
         </Button>
         <Button variant="secondary" size="md" onClick={onSampleHubspot}>
-          <SparkIcon />
+          <HubSpotIcon />
           Try HubSpot sample
         </Button>
       </div>
@@ -119,19 +120,6 @@ function UploadIcon() {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
       />
     </svg>
   );
