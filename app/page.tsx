@@ -108,6 +108,29 @@ export default function Home() {
     [ingest]
   );
 
+  function buildValidatedUrl(baseUrl: string, pathSegment: string): string {
+    try {
+      // Minimal path validation
+      if (pathSegment.includes('/../') || /\/%2e%2e\//i.test(pathSegment)) {
+        throw new Error('Invalid path');
+      }
+      
+      const url = new URL(baseUrl, window.location.origin);
+      
+      // Validate path parameter
+      if (!/^[A-Za-z0-9_.-]+$/.test(pathSegment)) {
+        throw new Error('Invalid parameter');
+      }
+      
+      // Build pathname from fixed literal + validated segment
+      url.pathname = `/${pathSegment}`;
+      
+      return url.href;
+    } catch {
+      throw new Error('Invalid URL');
+    }
+  }
+
   const loadSample = React.useCallback(
     async (
       path: string,
@@ -115,7 +138,8 @@ export default function Home() {
       prefill?: { quota?: number; quotaPeriod?: QuotaPeriod }
     ) => {
       try {
-        const res = await fetch(path);
+        const validatedUrl = buildValidatedUrl('/', path.startsWith('/') ? path.substring(1) : path);
+        const res = await fetch(validatedUrl);
         if (!res.ok) throw new Error("fetch failed");
         const text = await res.text();
         ingest(parseCsvText(text), fileName, true, prefill);
