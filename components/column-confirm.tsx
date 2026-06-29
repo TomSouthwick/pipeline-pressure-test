@@ -15,7 +15,7 @@ import {
   distinctStageValues,
 } from "@/lib/column-detection";
 import { CRM_LABEL, type CrmGuess } from "@/lib/crm-detection";
-import { isValidQuotaInput, parseQuotaInput } from "@/lib/parse";
+import { isValidQuotaInput, parseQuotaInput, checkDateFormat } from "@/lib/parse";
 import { getPeriodBounds } from "@/lib/quota-period";
 import type { QuotaPeriod, RawRow } from "@/lib/types";
 
@@ -173,7 +173,20 @@ export function ColumnConfirm({
   const missingRequired = REQUIRED_FIELDS.filter((f) => !mapping[f]);
   const requiredMappedCount = REQUIRED_FIELDS.filter((f) => !!mapping[f]).length;
 
+  const dateCheck = React.useMemo(
+    () =>
+      mapping.closeDate
+        ? checkDateFormat(rows.map((r) => r[mapping.closeDate!]))
+        : { ambiguous: false, sample: null, interpreted: null },
+    [rows, mapping.closeDate]
+  );
+
   const warnings: string[] = [...parseWarnings];
+  if (dateCheck.ambiguous && dateCheck.sample && dateCheck.interpreted) {
+    warnings.push(
+      `Close dates like “${dateCheck.sample}” are ambiguous — we read them as ${dateCheck.interpreted} (US month/day). If your export is day/month, the dates are off.`
+    );
+  }
   if (!isSample && (!mapping.amount || !mapping.stage)) {
     warnings.push(
       "Score will be limited. Map amount and stage for a full result."

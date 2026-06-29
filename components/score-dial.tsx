@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useReducedMotion } from "motion/react";
+import { arcColor } from "@/lib/score-color";
 
 gsap.registerPlugin(useGSAP);
 
@@ -39,32 +40,9 @@ function describeArc(cx: number, cy: number, r: number, sf: number, ef: number):
 }
 
 
-function lerp(t: number, pts: [number, number][]): number {
-  if (t <= pts[0][0]) return pts[0][1];
-  if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [t0, v0] = pts[i];
-    const [t1, v1] = pts[i + 1];
-    if (t <= t1) return v0 + ((t - t0) / (t1 - t0)) * (v1 - v0);
-  }
-  return pts[pts.length - 1][1];
-}
-
-// Physics-based HSL arc: red → orange → amber → yellow-green → green.
-// Exported so the headline grade text can match the gauge readout colour exactly.
-export function arcColor(f: number): string {
-  const h = lerp(f, [
-    [0,    4],
-    [0.28, 18],
-    [0.46, 32],
-    [0.60, 50],
-    [0.75, 88],
-    [1.0,  145],
-  ]);
-  const s = lerp(f, [[0, 84], [0.46, 92], [0.75, 80], [1, 68]]);
-  const l = lerp(f, [[0, 52], [0.46, 54], [0.75, 47], [1, 40]]);
-  return `hsl(${h.toFixed(1)}, ${s.toFixed(0)}%, ${l.toFixed(0)}%)`;
-}
+// The score colour scale lives in lib/score-color so the gauge and the PDF
+// report stay in lockstep. Re-exported for existing importers (result-reveal).
+export { arcColor };
 
 /** Scores at/above this get an emoji burst on reveal. */
 const CELEBRATION_THRESHOLD = 85;

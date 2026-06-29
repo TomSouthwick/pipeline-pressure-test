@@ -66,6 +66,58 @@ function isValidDate(d: Date): boolean {
   return d instanceof Date && !Number.isNaN(d.getTime());
 }
 
+export interface DateFormatCheck {
+  /** True when numeric D/M vs M/D can't be told apart and we may be guessing wrong. */
+  ambiguous: boolean;
+  /** An example raw value from the column, for the hint. */
+  sample: string | null;
+  /** How parseDate interpreted that sample (long form), for the hint. */
+  interpreted: string | null;
+}
+
+/**
+ * Inspect a date column for the classic D/M vs M/D trap. parseDate() assumes US
+ * M/D and only swaps when the first part exceeds 12 — so a UK "06/04/2026" is
+ * silently read as 4 June. This flags when that guess is unverifiable so the
+ * confirm step can show the user how we read it.
+ */
+export function checkDateFormat(values: (string | null | undefined)[]): DateFormatCheck {
+  const none: DateFormatCheck = { ambiguous: false, sample: null, interpreted: null };
+  const slash = /^(\d{1,2})[/\-.](\d{1,2})[/\-.]\d{2,4}$/;
+
+  let monthFirstEvidence = false; // second part > 12 => definitely M/D
+  let dayFirstEvidence = false; // first part > 12 => definitely D/M
+  let undetermined: string | null = null; // both parts <= 12
+  let firstSlash: string | null = null;
+
+  for (const raw of values) {
+    if (raw == null) continue;
+    const s = String(raw).trim();
+    const m = s.match(slash);
+    if (!m) continue;
+    if (firstSlash == null) firstSlash = s;
+    const a = parseInt(m[1], 10);
+    const b = parseInt(m[2], 10);
+    if (b > 12 && a <= 12) monthFirstEvidence = true;
+    else if (a > 12 && b <= 12) dayFirstEvidence = true;
+    else if (a <= 12 && b <= 12 && undetermined == null) undetermined = s;
+  }
+
+  if (firstSlash == null) return none; // no numeric slash dates -> unambiguous
+  if (monthFirstEvidence) return none; // data confirms M/D, our default is right
+
+  // No M/D evidence, but either explicit day-first dates or unguessable ones
+  // exist -> our M/D default may be wrong for the unguessable rows.
+  if (!dayFirstEvidence && undetermined == null) return none;
+
+  const sample = undetermined ?? firstSlash;
+  const d = parseDate(sample);
+  const interpreted = d
+    ? d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+  return { ambiguous: true, sample, interpreted };
+}
+
 /**
  * Parse a probability cell into a 0..1 fraction, or null.
  * Handles "75%", "75", "0.75". Bare numbers > 1 are treated as percentages.
