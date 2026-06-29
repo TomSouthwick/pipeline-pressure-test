@@ -17,6 +17,7 @@ import { autoDetect } from "@/lib/column-detection";
 import { inferCrm, type CrmGuess } from "@/lib/crm-detection";
 import { runDiagnostic } from "@/lib/scoring-engine";
 import { DEFAULT_LATE_STAGES } from "@/lib/scoring-config";
+import { track, scoreBucket } from "@/lib/analytics";
 import { cn } from "@/lib/cn";
 import type {
   DiagnosticResult,
@@ -67,6 +68,9 @@ export default function Home() {
       setError(null);
       const { guesses, mapping } = autoDetect(parsed.headers, parsed.rows);
       const crm = inferCrm(parsed.headers);
+      if (!isSample) {
+        track("csv_uploaded", { crm: crm.crm ?? "unknown" });
+      }
       const ctx: ConfirmCtx = {
         parsed,
         guesses,
@@ -122,23 +126,22 @@ export default function Home() {
     [ingest]
   );
 
-  const onSampleSalesforce = React.useCallback(
-    () => loadSample("/sample-pipeline.csv", "sample-pipeline.csv"),
-    [loadSample]
-  );
+  const onSampleSalesforce = React.useCallback(() => {
+    track("sample_tried", { crm: "salesforce" });
+    loadSample("/sample-pipeline.csv", "sample-pipeline.csv");
+  }, [loadSample]);
 
   // The HubSpot sample pre-fills a quarterly target so Coverage runs out of the
   // box — showcasing CRM-probability-weighted pipeline alongside the Salesforce
   // sample, which stays a three-category (no-quota) story.
-  const onSampleHubspot = React.useCallback(
-    () =>
-      loadSample(
-        "/sample-pipeline-hubspot.csv",
-        "sample-pipeline-hubspot.csv",
-        { quota: 800_000, quotaPeriod: "quarter" }
-      ),
-    [loadSample]
-  );
+  const onSampleHubspot = React.useCallback(() => {
+    track("sample_tried", { crm: "hubspot" });
+    loadSample(
+      "/sample-pipeline-hubspot.csv",
+      "sample-pipeline-hubspot.csv",
+      { quota: 800_000, quotaPeriod: "quarter" }
+    );
+  }, [loadSample]);
 
   const onRun = React.useCallback(
     (
@@ -152,6 +155,12 @@ export default function Home() {
         lateStages,
         quota,
         quotaPeriod,
+      });
+      track("diagnostic_run", {
+        source: stage.isSample ? "sample" : "upload",
+        crm: stage.crm.crm ?? "unknown",
+        scoreBucket: scoreBucket(result.score),
+        weighting: result.meta.weightingMethod ?? "none",
       });
       setStage({
         name: "result",
