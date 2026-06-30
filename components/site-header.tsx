@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useReducedMotion } from "motion/react";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "./theme-toggle";
 
 gsap.registerPlugin(useGSAP);
 
@@ -68,7 +69,7 @@ export function SiteHeader({ onHome }: SiteHeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background">
-      <div className="mx-auto flex max-w-3xl items-center justify-center px-5 pb-3.5 pt-6 sm:px-6 sm:pb-4 sm:pt-8">
+      <div className="relative mx-auto flex max-w-3xl items-center justify-center px-5 pb-3.5 pt-6 sm:px-6 sm:pb-4 sm:pt-8">
         <button
           ref={wordmarkRef}
           type="button"
@@ -102,6 +103,9 @@ export function SiteHeader({ onHome }: SiteHeaderProps) {
             </span>
           </span>
         </button>
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 sm:right-6">
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
