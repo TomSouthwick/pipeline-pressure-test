@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: `dark:` utilities apply under html.dark, set by the
+   theme toggle / no-flash script rather than the OS media query alone. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ----------------------------------------------------------------------------
    Pipeline Pressure Test — "The Instrument".
    Light, clinical, Stripe-precise. Whitespace + hairlines are the texture.
@@ -33,6 +37,31 @@
   --tick-strong: rgba(11, 18, 32, 0.28);
 }
 
+/* Dark theme — deep slate, not pure black; traffic-lights brightened to stay
+   AA-legible on the dark surfaces. Same token names, so every Tailwind colour
+   utility and the @theme mapping flip automatically. */
+html.dark {
+  --background: #0b0f17;
+  --surface: #141a24;
+  --surface-2: #1c2431;
+  --border: #283142;
+  --border-strong: #3a4658;
+
+  --foreground: #e7eaf0;
+  --muted: #9aa4b3;
+  --muted-2: #69748a;
+
+  --accent: #5b8cff;
+  --accent-dim: #1b2a4a;
+
+  --good: #3ad17f;
+  --warn: #e3b341;
+  --bad: #f0635a;
+
+  --tick: rgba(231, 234, 240, 0.12);
+  --tick-strong: rgba(231, 234, 240, 0.3);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -55,6 +84,10 @@
 
 html {
   color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
@@ -105,6 +138,18 @@ body {
   background: rgba(255, 255, 255, 0.65);
   filter: blur(14px);
   z-index: -1;
+}
+
+html.dark .wordmark-pill {
+  background: rgba(20, 26, 36, 0.96);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    0 0 40px 8px rgba(0, 0, 0, 0.35);
+}
+
+html.dark .wordmark-pill::before {
+  background: rgba(11, 15, 23, 0.55);
 }
 
 .text-gradient-pipeline {
